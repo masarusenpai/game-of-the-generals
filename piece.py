@@ -1,70 +1,165 @@
 from __future__ import annotations
+import constants as cn
+from abc import ABC, abstractmethod
 from typing import Callable
 
 
-PIECES = [
-    "FLAG",
-    "PRIVATE",
-    "SERGEANT",
-    "2ND LIEUTENANT",
-    "1ST LIEUTENANT",
-    "CAPTAIN",
-    "MAJOR",
-    "LIEUTENANT COLONEL",
-    "COLONEL",
-    "BRIGADIER GENERAL",
-    "MAJOR GENERAL",
-    "LIEUTENANT GENERAL",
-    "GENERAL",
-    "GENERAL OF THE ARMY",
-    "SPY"
-]
+PIECES: dict[str, Callable[[], Piece]] = {
+    "FLAG"               : lambda: Flag(),
+    "PRIVATE"            : lambda: Private(),
+    "SERGEANT"           : lambda: Sergeant(),
+    "2ND LIEUTENANT"     : lambda: SecondLieutenant(),
+    "1ST LIEUTENANT"     : lambda: FirstLieutenant(),
+    "CAPTAIN"            : lambda: Captain(),
+    "MAJOR"              : lambda: Major(),
+    "LIEUTENANT COLONEL" : lambda: LieutenantColonel(),
+    "COLONEL"            : lambda: Colonel(),
+    "BRIGADIER GENERAL"  : lambda: BrigadierGeneral(),
+    "MAJOR GENERAL"      : lambda: MajorGeneral(),
+    "LIEUTENANT GENERAL" : lambda: LieutenantGeneral(),
+    "GENERAL"            : lambda: General(),
+    "GENERAL OF THE ARMY": lambda: GeneralOfTheArmy(),
+    "SPY"                : lambda: Spy()
+}
+
+
+class Move(ABC):
+    @abstractmethod
+    def execute(self, board: Board, x: int, y: int) -> int:
+        pass
+
+
+class MoveUp(Move):
+    def execute(self, board, x, y):
+        my_piece = board.get_at(x, y)
+        if my_piece is None:
+            return cn.EMPTY_CELL
+
+        if y >= cn.BOARD_LEN - 1:
+            return cn.OUT_OF_BOUNDS
+
+        block = board.get_at(x, y + 1)
+        if block is not None and block.opp == my_piece.opp:
+            return cn.FRIENDLY_FIRE
+        
+        board.place(my_piece, x, y + 1)
+        board.clear(x, y)
+        return cn.SUCCESS
+
+
+class MoveDown(Move):
+    def execute(self, board, x, y):
+        my_piece = board.get_at(x, y)
+        if my_piece is None:
+            return cn.EMPTY_CELL
+
+        if y <= 0:
+            return cn.OUT_OF_BOUNDS
+
+        block = board.get_at(x, y - 1)
+        if block is not None and block.opp == my_piece.opp:
+            return cn.FRIENDLY_FIRE
+
+        board.place(my_piece, x, y - 1)
+        board.clear(x, y)
+        return cn.SUCCESS
+
+
+class MoveRight(Move):
+    def execute(self, board, x, y):
+        my_piece = board.get_at(x, y)
+        if my_piece is None:
+            return cn.EMPTY_CELL
+
+        if x >= cn.BOARD_WID - 1:
+            return cn.OUT_OF_BOUNDS
+
+        block = board.get_at(x + 1, y)
+        if block is not None and block.opp == my_piece.opp:
+            return cn.FRIENDLY_FIRE
+
+        board.place(my_piece, x + 1, y)
+        board.clear(x, y)
+        return cn.SUCCESS
+
+
+class MoveLeft(Move):
+    def execute(self, board, x, y):
+        my_piece = board.get_at(x, y)
+        if my_piece is None:
+            return cn.EMPTY_CELL
+
+        if x <= 0:
+            return cn.OUT_OF_BOUNDS
+
+        block = board.get_at(x - 1, y)
+        if block is not None and block.opp == my_piece.opp:
+            return cn.FRIENDLY_FIRE
+
+        board.place(my_piece, x - 1, y)
+        board.clear(x, y)
+        return cn.SUCCESS
 
 
 class Board:
-    LEN = 8
-    WID = 9
-    PRINT_LEN: Callable[[int], int] = lambda d: d * 6 - 8
-
     def __init__(self) -> None:
         self.list_repr: list[list[Piece | None]] = []
         self._initialise_board()
 
     def _initialise_board(self) -> None:
-        for y in range(self.LEN):
+        for y in range(cn.BOARD_LEN):
             self.list_repr.append([])
             curr_row = self.list_repr[y]
 
-            for _ in range(self.WID):
+            for _ in range(cn.BOARD_WID):
                 curr_row.append(None)
 
     def print_board(self) -> None:
-        print("-" * (Board.PRINT_LEN(self.WID)))
+        print("-" * (cn.PRINT_LEN(cn.BOARD_WID)))
 
-        for y in range(self.LEN - 1, -1, -1):
-            for x in range(self.WID):
+        for y in range(cn.BOARD_LEN - 1, -1, -1):
+            for x in range(cn.BOARD_WID):
                 curr_pc = self.list_repr[y][x]
                 print(f"| {'  ' if curr_pc is None else curr_pc} ", end="")
 
             print("|")
-            print("-" * (Board.PRINT_LEN(self.WID)))
+            print("-" * (cn.PRINT_LEN(cn.BOARD_WID)))
 
-    def is_empty(self, x: int, y: int) -> bool:
-        return self.list_repr[y][x] is None
-    
+    def get_at(self, x: int, y: int) -> Piece | None:
+        try:
+            return self.list_repr[y][x]
+        except IndexError:
+            return None
+
     def place(self, piece: Piece, x: int, y: int) -> None:
+        # TODO: attack sequence
         self.list_repr[y][x] = piece
+        piece.set_pos(x, y)
+
+    def clear(self, x: int, y: int) -> None:
+        self.list_repr[y][x] = None
+
+    # TODO: Delete if not needed
+    def get_adjacent_cells(self, piece: Piece) -> dict[str, Piece | None]:
+        x, y = piece.get_pos()
+        adjacent: dict[str, Piece | None] = {
+            "up"   : self.get_at(x, y + 1),
+            "down" : self.get_at(x, y - 1),
+            "left" : self.get_at(x - 1, y),
+            "right": self.get_at(x + 1, y)
+        }
+        return adjacent
 
 
 class Piece:
     def __init__(self, rank: int) -> None:
         self.rank = rank
-        self._x_pos: int | None = None
-        self._y_pos: int | None = None
-        self.symb = rank_to_symbol(self.rank)
+        self._x_pos = -1
+        self._y_pos = -1
+        self.symb = cn.RANK_TO_SYMBOL.get(self.rank)
         self.opp = False
 
-    def get_pos(self) -> tuple[int, int | None, None]:
+    def get_pos(self) -> tuple[int, int]:
         return self._x_pos, self._y_pos
 
     def set_pos(self, x: int, y: int) -> None:
@@ -90,6 +185,9 @@ class Piece:
         self.kill()
         return target
 
+    def name(self) -> str:
+        return list(PIECES)[self.rank]
+
     def __str__(self) -> str:
         return self.symb if not self.opp else "🔘"
 
@@ -110,7 +208,7 @@ class Flag(Piece):
 class Private(Piece):
     def __init__(self):
         super().__init__(1)
-    
+
     def attack(self, target):
         if isinstance(target, Spy):
             target.kill()
@@ -201,46 +299,3 @@ class Spy(Piece):
 
         target.kill()
         return self
-
-
-def rank_to_symbol(rank: int) -> str:
-        match rank:
-            case 0:
-                return "🏳️"
-            case 1:
-                return "🪖"
-            case 2:
-                return "🔼"
-            case 3:
-                return "🔺"
-            case 4:
-                return "🔻"
-            case 5:
-                return "⚓"
-            case 6:
-                return "☀️"
-            case 7:
-                return "✴️"
-            case 8:
-                return "🔰"
-            case 9:
-                return "🌟"
-            case 10:
-                return "🌠"
-            case 11:
-                return "✨"
-            case 12:
-                return "💫"
-            case 13:
-                return "👑"
-            case 14:
-                return "👀"
-
-
-def display_legend() -> None:
-    print("=== LEGEND ===")
-    for i, piece in enumerate(PIECES):
-        print(f"{rank_to_symbol(i)} -> {piece}")
-
-
-display_legend()
