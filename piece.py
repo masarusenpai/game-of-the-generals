@@ -34,6 +34,9 @@ MOVES: dict[str, Callable[[], Move]] = {
 class Move(ABC):
     @abstractmethod
     def execute(self, board: Board, x: int, y: int) -> tuple[int, int]:
+        """
+        Execute movement on `board` on piece at position (`x`, `y`).
+        """
         pass
 
 
@@ -177,7 +180,7 @@ class Board:
             return "" # This should never happen!
         fallen = self.graveyard[-1]
         return f"{fallen.name()} {cn.RANK_TO_SYMBOL.get(fallen.rank)}"
-    
+
     def undo_place(self) -> None:
         if not self.cache:
             return
