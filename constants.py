@@ -1,6 +1,8 @@
 from typing import Callable
 
 
+ORD_OFFSET = 97
+
 SUCCESS       = 0
 EMPTY_CELL    = 1
 OUT_OF_BOUNDS = 2
@@ -33,4 +35,36 @@ RANK_TO_SYMBOL: dict[int, str] = {
     12: "⚔️",
     13: "👑",
     14: "👀"
+}
+
+KEYWORD_MAPPER: dict[str, str] = {
+    "FLAG"               : "FLAG",
+    "FLG"                : "FLAG",
+    "PRIVATE"            : "PRIVATE",
+    "PRV"                : "PRIVATE",
+    "SERGEANT"           : "SERGEANT",
+    "SGT"                : "SERGEANT",
+    "2ND LIEUTENANT"     : "2ND LIEUTENANT",
+    "2LT"                : "2ND LIEUTENANT",
+    "1ST LIEUTENANT"     : "1ST LIEUTENANT",
+    "1LT"                : "1ST LIEUTENANT",
+    "CAPTAIN"            : "CAPTAIN",
+    "CPT"                : "CAPTAIN",
+    "MAJOR"              : "MAJOR",
+    "MJR"                : "MAJOR",
+    "LIEUTENANT COLONEL" : "LIEUTENANT COLONEL",
+    "LTC"                : "LIEUTENANT COLONEL",
+    "COLONEL"            : "COLONEL",
+    "COL"                : "COLONEL",
+    "BRIGADIER GENERAL"  : "BRIGADIER GENERAL",
+    "BRG"                : "BRIGADIER GENERAL",
+    "MAJOR GENERAL"      : "MAJOR GENERAL",
+    "MJG"                : "MAJOR GENERAL",
+    "LIEUTENANT GENERAL" : "LIEUTENANT GENERAL",
+    "LTG"                : "LIEUTENANT GENERAL",
+    "GENERAL"            : "GENERAL",
+    "GNR"                : "GENERAL",
+    "GENERAL OF THE ARMY": "GENERAL OF THE ARMY",
+    "GOA"                : "GENERAL OF THE ARMY",
+    "SPY"                : "SPY"
 }

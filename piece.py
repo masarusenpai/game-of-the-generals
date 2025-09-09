@@ -109,6 +109,7 @@ class Board:
     def __init__(self) -> None:
         self.list_repr: list[list[Piece | None]] = []
         self.graveyard: list[Piece] = []
+        self.cache: list[tuple[int, int]] = []
         self._initialise_board()
 
     def _initialise_board(self) -> None:
@@ -174,20 +175,14 @@ class Board:
     def recently_killed(self) -> str:
         if not self.graveyard:
             return "" # This should never happen!
-
         fallen = self.graveyard[-1]
         return f"{fallen.name()} {cn.RANK_TO_SYMBOL.get(fallen.rank)}"
-
-    # TODO: Delete if not needed
-    def get_adjacent_cells(self, piece: Piece) -> dict[str, Piece | None]:
-        x, y = piece.get_pos()
-        adjacent: dict[str, Piece | None] = {
-            "up"   : self.get_at(x, y + 1),
-            "down" : self.get_at(x, y - 1),
-            "left" : self.get_at(x - 1, y),
-            "right": self.get_at(x + 1, y)
-        }
-        return adjacent
+    
+    def undo_place(self) -> None:
+        if not self.cache:
+            return
+        x, y = self.cache.pop()
+        self.clear(x, y)
 
 
 class Piece:
