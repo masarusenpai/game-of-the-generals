@@ -39,16 +39,14 @@ class Board:
         try:
             return self.list_repr[y][x]
         except IndexError:
-            return None
+            return Piece(cn.WALL)
 
     def place(self, piece: Piece, x: int, y: int) -> int:
         code = cn.MOVE_MADE
-
         src = piece
         dest = self.get_at(x, y)
         if dest is not None:
             src = piece.attack(dest)
-
             if src == piece:
                 code = cn.OPP_ELIM
                 self.graveyard.append(dest)
@@ -63,6 +61,7 @@ class Board:
                 code *= -1
 
         self.list_repr[y][x] = src
+        self.cache.append((x, y))
         piece.set_pos(x, y)
         return code
 
@@ -73,10 +72,18 @@ class Board:
         if not self.graveyard:
             return "" # This should never happen!
         fallen = self.graveyard[-1]
-        return f"{fallen.name()} {cn.RANK_TO_SYMBOL.get(fallen.rank)}"
+        return f"{fallen.name()} {cn.SYMBOLS[fallen.rank]}"
 
-    def undo_place(self) -> None:
+    def undo_place(self) -> Piece | None:
         if not self.cache:
-            return
+            return None
         x, y = self.cache.pop()
+        piece = self.get_at(x, y)
         self.clear(x, y)
+        return piece
+    
+    def is_surrounded(self, x: int, y: int) -> bool:
+        return self.get_at(x + 1, y) is not None \
+               and self.get_at(x - 1, y) is not None \
+               and self.get_at(x, y + 1) is not None \
+               and self.get_at(x, y - 1) is not None

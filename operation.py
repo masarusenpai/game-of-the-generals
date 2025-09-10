@@ -1,16 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Callable
 from board import Board
 import constants as cn
-
-
-MOVES: dict[str, Callable[[], Move]] = {
-    "up"   : lambda: MoveUp(),
-    "down" : lambda: MoveDown(),
-    "left" : lambda: MoveLeft(),
-    "right": lambda: MoveRight()
-}
 
 
 class Move(ABC):
@@ -88,3 +79,35 @@ class MoveLeft(Move):
 
         board.clear(x, y)
         return cn.SUCCESS, board.place(my_piece, x - 1, y)
+
+
+class MoveFactory(ABC):
+    @abstractmethod
+    def generate_move(self) -> Move:
+        pass
+
+
+class MoveUpFactory(MoveFactory):
+    def generate_move(self):
+        return MoveUp()
+
+
+class MoveDownFactory(MoveFactory):
+    def generate_move(self):
+        return MoveDown()
+
+
+class MoveRightFactory(MoveFactory):
+    def generate_move(self):
+        return MoveRight()
+
+
+class MoveLeftFactory(MoveFactory):
+    def generate_move(self):
+        return MoveLeft()
+
+
+MOVES: dict[str, MoveFactory] = {
+    "up": MoveUpFactory(), "down": MoveDownFactory(),
+    "left": MoveLeftFactory(), "right": MoveRightFactory()
+}

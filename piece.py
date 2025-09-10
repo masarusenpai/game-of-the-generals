@@ -1,25 +1,6 @@
 from __future__ import annotations
-from typing import Callable
+from abc import ABC, abstractmethod
 import constants as cn
-
-
-PIECES: dict[str, Callable[[], Piece]] = {
-    "FLAG"               : lambda: Flag(),
-    "PRIVATE"            : lambda: Private(),
-    "SERGEANT"           : lambda: Sergeant(),
-    "2ND LIEUTENANT"     : lambda: SecondLieutenant(),
-    "1ST LIEUTENANT"     : lambda: FirstLieutenant(),
-    "CAPTAIN"            : lambda: Captain(),
-    "MAJOR"              : lambda: Major(),
-    "LIEUTENANT COLONEL" : lambda: LieutenantColonel(),
-    "COLONEL"            : lambda: Colonel(),
-    "BRIGADIER GENERAL"  : lambda: BrigadierGeneral(),
-    "MAJOR GENERAL"      : lambda: MajorGeneral(),
-    "LIEUTENANT GENERAL" : lambda: LieutenantGeneral(),
-    "GENERAL"            : lambda: General(),
-    "GENERAL OF THE ARMY": lambda: GeneralOfTheArmy(),
-    "SPY"                : lambda: Spy()
-}
 
 
 class Piece:
@@ -27,7 +8,7 @@ class Piece:
         self.rank = rank
         self._x_pos = -1
         self._y_pos = -1
-        self.symb: str = cn.RANK_TO_SYMBOL.get(self.rank)
+        self.symb = cn.SYMBOLS[self.rank]
         self.opp = False
 
     def get_pos(self) -> tuple[int, int]:
@@ -144,3 +125,99 @@ class Spy(Piece):
         if self.rank == target.rank:
             return None
         return self
+
+
+class PieceFactory(ABC):
+    @abstractmethod
+    def generate_piece(self) -> Piece:
+        pass
+
+
+class FlagFactory(PieceFactory):
+    def generate_piece(self):
+        return Flag()
+
+
+class PrivateFactory(PieceFactory):
+    def generate_piece(self):
+        return Private()
+
+
+class SergeantFactory(PieceFactory):
+    def generate_piece(self):
+        return Sergeant()
+
+
+class SecondLieutenantFactory(PieceFactory):
+    def generate_piece(self):
+        return SecondLieutenant()
+
+
+class FirstLieutenantFactory(PieceFactory):
+    def generate_piece(self):
+        return FirstLieutenant()
+
+
+class CaptainFactory(PieceFactory):
+    def generate_piece(self):
+        return Captain()
+
+
+class MajorFactory(PieceFactory):
+    def generate_piece(self):
+        return Major()
+
+
+class LieutenantColonelFactory(PieceFactory):
+    def generate_piece(self):
+        return LieutenantColonel()
+
+
+class ColonelFactory(PieceFactory):
+    def generate_piece(self):
+        return Colonel()
+
+
+class BrigadierGeneralFactory(PieceFactory):
+    def generate_piece(self):
+        return BrigadierGeneral()
+
+
+class MajorGeneralFactory(PieceFactory):
+    def generate_piece(self):
+        return MajorGeneral()
+
+
+class LieutenantGeneralFactory(PieceFactory):
+    def generate_piece(self):
+        return LieutenantGeneral()
+
+
+class GeneralFactory(PieceFactory):
+    def generate_piece(self):
+        return General()
+
+
+class GeneralOfTheArmyFactory(PieceFactory):
+    def generate_piece(self):
+        return GeneralOfTheArmy()
+
+
+class SpyFactory(PieceFactory):
+    def generate_piece(self):
+        return Spy()
+    
+
+def challenge_icon() -> Piece:
+    return Piece(cn.CHALLENGE)
+
+
+PIECES: dict[str, PieceFactory] = {
+    "FLAG": FlagFactory(), "PRIVATE": PrivateFactory(), "SERGEANT": SergeantFactory(),
+    "2ND LIEUTENANT": SecondLieutenantFactory(), "1ST LIEUTENANT": FirstLieutenantFactory(),
+    "CAPTAIN": CaptainFactory(), "MAJOR": MajorFactory(),
+    "LIEUTENANT COLONEL": LieutenantColonelFactory(), "COLONEL": ColonelFactory(),
+    "BRIGADIER GENERAL": BrigadierGeneralFactory(), "MAJOR GENERAL": MajorGeneralFactory(),
+    "LIEUTENANT GENERAL": LieutenantGeneralFactory(), "GENERAL": GeneralFactory(),
+    "GENERAL OF THE ARMY": GeneralOfTheArmyFactory(), "SPY": SpyFactory()
+}
