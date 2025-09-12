@@ -64,7 +64,7 @@ class Board:
                 self.graveyard.append(piece)
                 piece.set_pos(-1, -1)
 
-            if isinstance(dest, Flag):
+            if isinstance(self.graveyard[-1], Flag):
                 code *= -1
 
         self.list_repr[y][x] = src

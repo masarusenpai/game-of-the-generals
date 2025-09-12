@@ -20,6 +20,9 @@ class Piece:
 
     def set_opp(self) -> None:
         self.opp = True
+    
+    def reveal(self) -> None:
+        self.opp = False
 
     def attack(self, target: Piece) -> Piece | None:
         if self.rank == target.rank:

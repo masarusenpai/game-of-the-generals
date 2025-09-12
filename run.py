@@ -21,6 +21,17 @@ def append_opp_pieces(piece: Piece) -> None:
     opp_pieces.append(piece)
 
 
+def reveal_opp_pieces() -> None:
+    global opp_pieces
+    for piece in opp_pieces:
+        piece.reveal()
+
+
+def clear_opp_pieces() -> None:
+    global opp_pieces
+    opp_pieces.clear()
+
+
 def set_piece_dict() -> None:
     global remaining_pieces
     remaining_pieces = {
@@ -238,8 +249,9 @@ def place_pieces() -> int:
                     os.system(clear)
                     board_and_console()
                     clear_board()
-                    sleep(1)
+                    clear_opp_pieces()
                     set_console()
+                    sleep(1)
                     return -1
                 continue
 
@@ -288,7 +300,7 @@ def handle_turn(result: int) -> None:
         board.set_challenge()
         os.system(clear)
         board_and_console()
-        sleep(2)
+        sleep(1)
 
         board.restore_position()
         match result:
@@ -298,24 +310,25 @@ def handle_turn(result: int) -> None:
                 set_console(f"The opponent ate your {fallen.name()} {cn.SYMBOLS[rank]}!")
             case cn.SPLIT:
                 set_console("Split! Both your pieces have been eliminated (same rank).")
-            case cn.USR_WINNER | cn.OPP_WINNER:
-                win = "You ate the opponent's FLAG 🏳️ and won!"
-                lose = "The opponent captured your FLAG 🏳️. Better luck next time!"
-                set_console(win if cn.USR_WINNER else lose)
-                os.system(clear)
-                board_and_console()
-                input("Press 'ENTER' to return to main menu.")
-                clear_board()
-                set_console()
-                return 1
+            case cn.USR_WINNER:
+                set_console("You ate the opponent's FLAG 🏳️ and won!")
+            case cn.OPP_WINNER:
+                set_console("The opponent captured your FLAG 🏳️. Better luck next time!")
+
+        if result < 0:
+            reveal_opp_pieces()
+            os.system(clear)
+            board_and_console()
+            input("Press 'ENTER' to return to main menu.")
+            clear_board()
+            set_console()
+            return 1
 
         os.system(clear)
         board_and_console()
         sleep(2)
-        set_console("It's your turn!")
-        return 0
 
-    set_console(f"Opponent moved to {board.cache[-1][0] + 1}, {board.cache[-1][1] + 1}")
+    set_console("It's your turn!")
     return 0
 
 
@@ -327,14 +340,13 @@ def handle_game() -> None:
     os.system(clear)
     set_console("Your opponent (simulation) is placing its pieces...")
     board_and_console()
-    sleep(2)
+    sleep(1)
 
     set_opponent_pieces()
     set_console("It's your turn!")
 
     while True:
         os.system(clear)
-        
         board_and_console()
         print("To move pieces, use the command <POS> <OPERATION> (e.g. A3 UP).\n")
         print_in_game_commands()
@@ -347,10 +359,11 @@ def handle_game() -> None:
             case "forfeit":
                 if verify_user_action("forfeit"):
                     set_console("Game forfeited. Exiting to main menu...")
+                    reveal_opp_pieces()
                     os.system(clear)
                     board_and_console()
                     clear_board()
-                    sleep(1)
+                    sleep(2)
                     set_console()
                     break
                 continue
@@ -409,23 +422,27 @@ def handle_game() -> None:
         board_and_console()
         sleep(2)
 
-        opp_piece = opp_pieces[randrange(len(opp_pieces))]
-        x, y = opp_piece.get_pos()
-        while (x == -1 and y == -1) or board.is_surrounded(opp_piece) or not opp_piece.opp:
-            opp_piece = opp_pieces[randrange(len(opp_pieces))]
-            x, y = opp_piece.get_pos()
+        # Repeatedly choose random piece until valid movable piece is chosen
+        opp_choice = opp_pieces[randrange(len(opp_pieces))]
+        opp_x, opp_y = opp_choice.get_pos()
+        while ((opp_x == -1 and opp_y == -1)
+                or board.is_surrounded(opp_choice)
+                or not opp_choice.opp):
+            opp_choice = opp_pieces[randrange(len(opp_pieces))]
+            opp_x, opp_y = opp_choice.get_pos()
 
-        opp_operation = list(MOVES)[randrange(4)]
-        opp_status, opp_result = MOVES.get(opp_operation).generate_move().execute(board, x, y)
+        # Repeatedly choose random move until valid move is chosen
+        move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
+        opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
         while opp_status != cn.SUCCESS:
-            print(opp_operation)
-            opp_operation = list(MOVES)[randrange(4)]
-            opp_status, opp_result = MOVES.get(opp_operation).generate_move().execute(board, x, y)
+            move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
+            opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
 
-        if handle_turn(opp_result):
+        if handle_turn(opp_res):
             break
 
     set_game_status(False)
+    clear_opp_pieces()
 
 
 def start() -> None:
