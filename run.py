@@ -4,15 +4,21 @@ from time import sleep
 from board import Board
 import constants as cn
 from operation import MOVES
-from piece import PIECES, challenge_icon
+from piece import PIECES, Piece, challenge_icon
 
 
 remaining_pieces: dict[str, int]
+opp_pieces: list[Piece] = []
 
 clear = ""
 console = ""
 in_game = False
 board = Board()
+
+
+def append_opp_pieces(piece: Piece) -> None:
+    global opp_pieces
+    opp_pieces.append(piece)
 
 
 def set_piece_dict() -> None:
@@ -121,7 +127,8 @@ def empty_box() -> bool:
     return True
 
 
-def parse_coords(inp: str, init=False) -> tuple[int, int] | tuple[None, None]:
+def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
+    inp = raw_inp.lower()
     if len(inp) != 2:
         return None, None
     x = ord(inp[0]) - cn.ORD_OFFSET
@@ -129,8 +136,7 @@ def parse_coords(inp: str, init=False) -> tuple[int, int] | tuple[None, None]:
         return None, None
     y = int(inp[1])
 
-    y_bound = 3 if init else 8
-    if y < 1 or y > y_bound:
+    if y < 1 or y > 8:
         return None, None
     return x, y - 1
 
@@ -182,6 +188,7 @@ def set_opponent_pieces(opp=True) -> None:
         piece_obj = PIECES.get(piece).generate_piece()
         if opp:
             piece_obj.set_opp()
+            append_opp_pieces(piece_obj)
 
         for _ in range(n_pieces):
             x, y = randrange(9), randrange(y_lower_bound, y_upper_bound)
@@ -251,8 +258,8 @@ def place_pieces() -> int:
             continue
 
         pos_input = cmds[-1]
-        x, y = parse_coords(pos_input.lower(), init=True)
-        if x is None or y is None:
+        x, y = parse_coords(pos_input)
+        if x is None and y is None:
             set_console(f"Error: invalid or forbidden position '{pos_input}'.")
             continue
 
@@ -269,6 +276,46 @@ def place_pieces() -> int:
     os.system(clear)
     board_and_console()
     input("All pieces have been placed! Press 'ENTER' to begin the game.")
+    return 0
+
+
+def handle_turn(result: int) -> None:
+    if result != cn.MOVE_MADE:
+        fallen = board.recently_killed()
+        rank = fallen.rank
+
+        set_console("CHALLENGE! Examining outcome...")
+        board.set_challenge()
+        os.system(clear)
+        board_and_console()
+        sleep(2)
+
+        board.restore_position()
+        match result:
+            case cn.OPP_ELIM:
+                set_console(f"You ate the opponent's {fallen.name()} {cn.SYMBOLS[rank]}!")
+            case cn.USR_ELIM:
+                set_console(f"The opponent ate your {fallen.name()} {cn.SYMBOLS[rank]}!")
+            case cn.SPLIT:
+                set_console("Split! Both your pieces have been eliminated (same rank).")
+            case cn.USR_WINNER | cn.OPP_WINNER:
+                win = "You ate the opponent's FLAG 🏳️ and won!"
+                lose = "The opponent captured your FLAG 🏳️. Better luck next time!"
+                set_console(win if cn.USR_WINNER else lose)
+                os.system(clear)
+                board_and_console()
+                input("Press 'ENTER' to return to main menu.")
+                clear_board()
+                set_console()
+                return 1
+
+        os.system(clear)
+        board_and_console()
+        sleep(2)
+        set_console("It's your turn!")
+        return 0
+
+    set_console(f"Opponent moved to {board.cache[-1][0] + 1}, {board.cache[-1][1] + 1}")
     return 0
 
 
@@ -308,28 +355,83 @@ def handle_game() -> None:
                     break
                 continue
 
-        cmds = cmd.lower().split()
-        if len(cmds) != 2 or cmds[0] != "which":
+        cmds = cmd.split()
+        if len(cmds) != 2:
             set_console(f"Error: invalid command '{cmd}'.")
             continue
 
-        set_console("Command setup coming soon...")
+        if cmds[0].lower() == 'which':
+            x, y = parse_coords(cmds[1])
+            if x is None and y is None:
+                set_console(f"Error: invalid position '{cmds[1]}'.")
+                continue
 
+            selected_piece = board.get_at(x, y)
+            if selected_piece is None:
+                set_console("Error: blank position selected.")
+                continue
+
+            if selected_piece.opp:
+                set_console(f"Piece at {cmds[1].upper()}: UNKNOWN (enemy piece selected)")
+            else:
+                set_console(f"Piece at {cmds[1].upper()}: {selected_piece.name()} {selected_piece}")
+            continue
+
+        x, y = parse_coords(cmds[0])
+        if x is None and y is None:
+            set_console(f"Error: invalid position '{cmds[0]}'.")
+            continue
+        operation = MOVES.get(cmds[1].lower())
+        if operation is None:
+            set_console(f"Error: invalid operation '{cmds[1]}'.")
+            continue
+
+        if board.get_at(x, y) is not None and board.get_at(x, y).opp:
+            set_console("Error: enemy piece selected.")
+            continue
+
+        status, result = operation.generate_move().execute(board, x, y)
+        if status != cn.SUCCESS:
+            match status:
+                case cn.EMPTY_CELL:
+                    set_console("Error: empty cell selected.")
+                case cn.OUT_OF_BOUNDS:
+                    set_console("Error: out-of-bounds move.")
+                case cn.FRIENDLY_FIRE:
+                    set_console("Error: move blocked by a friendly piece.")
+            continue
+
+        if handle_turn(result):
+            break
+
+        set_console("It's the opponent's turn. Calculating move...")
+        os.system(clear)
+        board_and_console()
+        sleep(2)
+
+        opp_piece = opp_pieces[randrange(len(opp_pieces))]
+        x, y = opp_piece.get_pos()
+        while (x == -1 and y == -1) or board.is_surrounded(opp_piece) or not opp_piece.opp:
+            opp_piece = opp_pieces[randrange(len(opp_pieces))]
+            x, y = opp_piece.get_pos()
+
+        opp_operation = list(MOVES)[randrange(4)]
+        opp_status, opp_result = MOVES.get(opp_operation).generate_move().execute(board, x, y)
+        while opp_status != cn.SUCCESS:
+            print(opp_operation)
+            opp_operation = list(MOVES)[randrange(4)]
+            opp_status, opp_result = MOVES.get(opp_operation).generate_move().execute(board, x, y)
+
+        if handle_turn(opp_result):
+            break
 
     set_game_status(False)
 
 
 def start() -> None:
-    end_loop = False
-
-    os.system(clear)
     while True:
+        os.system(clear)
         board_and_console()
-
-        if end_loop:
-            sleep(1)
-            break
-
         print_commands()
         print("Please input a command.")
         cmd = input("> ").lower()
@@ -345,11 +447,12 @@ def start() -> None:
                 display_legend()
             case "exit" | "e":
                 set_console("Paalam (Goodbye)! 👋")
-                end_loop = True
+                os.system(clear)
+                board_and_console()
+                sleep(2)
+                break
             case _:
                 set_console(f"'{cmd}': invalid command.")
-
-        os.system(clear)
 
 
 if __name__ == "__main__":

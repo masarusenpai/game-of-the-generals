@@ -1,5 +1,5 @@
 import constants as cn
-from piece import Piece, Flag
+from piece import Piece, Flag, challenge_icon
 
 
 class Board:
@@ -7,6 +7,7 @@ class Board:
         self.list_repr: list[list[Piece | None]] = []
         self.graveyard: list[Piece] = []
         self.cache: list[tuple[int, int]] = []
+        self.challenge_restore: list[Piece] = []
         self._initialise_board()
 
     def _initialise_board(self) -> None:
@@ -39,7 +40,9 @@ class Board:
         try:
             return self.list_repr[y][x]
         except IndexError:
-            return Piece(cn.WALL)
+            wall = Piece(cn.WALL)
+            wall.set_opp()
+            return wall
 
     def place(self, piece: Piece, x: int, y: int) -> int:
         code = cn.MOVE_MADE
@@ -48,14 +51,18 @@ class Board:
         if dest is not None:
             src = piece.attack(dest)
             if src == piece:
-                code = cn.OPP_ELIM
+                code = cn.OPP_ELIM if not piece.opp else cn.USR_ELIM
                 self.graveyard.append(dest)
+                dest.set_pos(-1, -1)
             elif src is None:
                 code = cn.SPLIT
                 self.graveyard.append(dest)
+                piece.set_pos(-1, -1)
+                dest.set_pos(-1, -1)
             else:
-                code = cn.USR_ELIM
+                code = cn.USR_ELIM if not piece.opp else cn.OPP_ELIM
                 self.graveyard.append(piece)
+                piece.set_pos(-1, -1)
 
             if isinstance(dest, Flag):
                 code *= -1
@@ -67,12 +74,11 @@ class Board:
 
     def clear(self, x: int, y: int) -> None:
         self.list_repr[y][x] = None
-    
-    def recently_killed(self) -> str:
+
+    def recently_killed(self) -> Piece | None:
         if not self.graveyard:
-            return "" # This should never happen!
-        fallen = self.graveyard[-1]
-        return f"{fallen.name()} {cn.SYMBOLS[fallen.rank]}"
+            return None # This should never happen!
+        return self.graveyard[-1]
 
     def undo_place(self) -> Piece | None:
         if not self.cache:
@@ -81,9 +87,23 @@ class Board:
         piece = self.get_at(x, y)
         self.clear(x, y)
         return piece
-    
-    def is_surrounded(self, x: int, y: int) -> bool:
-        return self.get_at(x + 1, y) is not None \
-               and self.get_at(x - 1, y) is not None \
-               and self.get_at(x, y + 1) is not None \
-               and self.get_at(x, y - 1) is not None
+
+    def set_challenge(self) -> None:
+        x, y = self.cache[-1]
+        loc = self.get_at(x, y)
+        if loc is not None:
+            self.challenge_restore.append(loc)
+        self.place(challenge_icon(), x, y)
+
+    def restore_position(self) -> None:
+        x, y = self.cache[-1]
+        self.clear(x, y)
+        if self.challenge_restore:
+            self.place(self.challenge_restore.pop(), x, y)
+
+    def is_surrounded(self, piece: Piece) -> bool:
+        x, y = piece.get_pos()
+        return self.get_at(x + 1, y) is not None and self.get_at(x + 1, y).opp \
+               and self.get_at(x - 1, y) is not None and self.get_at(x - 1, y).opp \
+               and self.get_at(x, y + 1) is not None and self.get_at(x, y + 1).opp \
+               and self.get_at(x, y - 1) is not None and self.get_at(x, y - 1).opp
