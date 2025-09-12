@@ -1,10 +1,10 @@
 import os
 from random import randrange
 from time import sleep
-from board import Board
+from components.board import Board
+from components.operation import MOVES
+from components.piece import PIECES, Piece
 import constants as cn
-from operation import MOVES
-from piece import PIECES, Piece, challenge_icon
 
 
 remaining_pieces: dict[str, int]

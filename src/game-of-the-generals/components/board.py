@@ -1,5 +1,5 @@
 import constants as cn
-from piece import Piece, Flag, challenge_icon
+from components.piece import Piece, Flag, challenge_icon
 
 
 class Board:

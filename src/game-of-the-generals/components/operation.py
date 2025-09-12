@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from board import Board
+from components.board import Board
 import constants as cn
 
 
