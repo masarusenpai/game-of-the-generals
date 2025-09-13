@@ -1,3 +1,4 @@
 #!/bin/bash
 
-python3 src/game-of-the-generals/run.py
+cd src/
+python3 -m gog.run

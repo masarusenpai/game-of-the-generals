@@ -1,10 +1,10 @@
 import os
 from random import randrange
 from time import sleep
-from components.board import Board
-from components.operation import MOVES
-from components.piece import PIECES, Piece
-import constants as cn
+from gog.components import constants as con
+from gog.components.board import Board
+from gog.components.operation import MOVES
+from gog.components.piece import PIECES, Piece
 
 
 remaining_pieces: dict[str, int]
@@ -14,22 +14,6 @@ clear = ""
 console = ""
 in_game = False
 board = Board()
-
-
-def append_opp_pieces(piece: Piece) -> None:
-    global opp_pieces
-    opp_pieces.append(piece)
-
-
-def reveal_opp_pieces() -> None:
-    global opp_pieces
-    for piece in opp_pieces:
-        piece.reveal()
-
-
-def clear_opp_pieces() -> None:
-    global opp_pieces
-    opp_pieces.clear()
 
 
 def set_piece_dict() -> None:
@@ -48,6 +32,7 @@ def clear_board() -> None:
     """
     global board
     board = Board()
+    opp_pieces.clear()
 
 
 def set_console(message="") -> None:
@@ -63,11 +48,16 @@ def set_game_status(status: bool) -> None:
     in_game = status
 
 
+def reveal_opp_pieces() -> None:
+    for piece in opp_pieces:
+        piece.reveal()
+
+
 def board_and_console() -> None:
     print()
     print(console)
     print()
-    print("=== ⭐ GAME OF THE GENERALS ⭐ ===".center(cn.PRINT_LEN(cn.BOARD_WID)))
+    print("=== ⭐ GAME OF THE GENERALS ⭐ ===".center(con.PRINT_LEN(con.BOARD_WID)))
     print()
     board.print_board()
     print()
@@ -76,7 +66,7 @@ def board_and_console() -> None:
 def display_rules() -> None:
     os.system(clear)
     print("\n\n")
-    print("=== ⭐ RULES ⭐ ===\n".center(cn.PRINT_LEN(cn.BOARD_WID)))
+    print("=== ⭐ RULES ⭐ ===\n".center(con.PRINT_LEN(con.BOARD_WID)))
     print("Rules coming soon...") # TODO: rules
 
     if in_game:
@@ -89,11 +79,11 @@ def display_rules() -> None:
 def display_legend() -> None:
     os.system(clear)
     print("\n\n")
-    print("=== ⭐ LEGEND ⭐ ===\n".center(cn.PRINT_LEN(cn.BOARD_WID)))
+    print("=== ⭐ LEGEND ⭐ ===\n".center(con.PRINT_LEN(con.BOARD_WID)))
     print("EMOJI                                    PIECE")
-    print("=" * cn.PRINT_LEN(cn.BOARD_WID))
+    print("=" * con.PRINT_LEN(con.BOARD_WID))
     for i, piece in enumerate(list(PIECES)):
-        print(f"{cn.SYMBOLS[i]}{piece.rjust(cn.PRINT_LEN(cn.BOARD_WID) - 2)}")
+        print(f"{con.SYMBOLS[i]}{piece.rjust(con.PRINT_LEN(con.BOARD_WID) - 2)}")
 
     if in_game:
         input_message = "\nPress 'ENTER' to return to game."
@@ -104,7 +94,7 @@ def display_legend() -> None:
 
 def print_commands() -> None:
     print("COMMAND                               FUNCTION")
-    print("=" * cn.PRINT_LEN(cn.BOARD_WID))
+    print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(PLAY/P)                            Start game")
     print("(RULES/R)                           View rules")
     print("(LEGEND/L)                   View emoji legend")
@@ -114,7 +104,7 @@ def print_commands() -> None:
 
 def print_pre_game_commands() -> None:
     print("OTHER SUPPORTED COMMANDS")
-    print("=" * cn.PRINT_LEN(cn.BOARD_WID))
+    print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(PIECE/P)                  View unadded pieces")
     print("(UNDO/U)                                  Undo")
     print("(EXIT/E)                                  Exit")
@@ -124,7 +114,7 @@ def print_pre_game_commands() -> None:
 
 def print_in_game_commands() -> None:
     print("OTHER SUPPORTED COMMANDS")
-    print("=" * cn.PRINT_LEN(cn.BOARD_WID))
+    print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(WHICH <POS>)      View name of piece at <POS>")
     print("(RULES/R)                           View rules")
     print("(FORFEIT)                     Forfeit the game")
@@ -142,7 +132,7 @@ def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
     inp = raw_inp.lower()
     if len(inp) != 2:
         return None, None
-    x = ord(inp[0]) - cn.ORD_OFFSET
+    x = ord(inp[0]) - con.ORD_OFFSET
     if x < 0 or x > 8 or not inp[1].isnumeric():
         return None, None
     y = int(inp[1])
@@ -155,16 +145,16 @@ def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
 def show_piece_box() -> None:
     os.system(clear)
     print("\n\n")
-    print("=== ⭐ REMAINING PIECES ⭐ ===\n".center(cn.PRINT_LEN(cn.BOARD_WID)))
+    print("=== ⭐ REMAINING PIECES ⭐ ===\n".center(con.PRINT_LEN(con.BOARD_WID)))
 
     for i, (piece, no) in enumerate(remaining_pieces.items()):
         if i == len(remaining_pieces) - 1:
             keyword = ""
         else:
-            keyword = f" ({list(cn.KEYWORD_MAPPER)[i * 2 + 1]})"
+            keyword = f" ({list(con.KEYWORD_MAPPER)[i * 2 + 1]})"
 
         if no:
-            print(f"{(piece + keyword).ljust(cn.PRINT_LEN(cn.BOARD_WID) - 2)}{no}")
+            print(f"{(piece + keyword).ljust(con.PRINT_LEN(con.BOARD_WID) - 2)}{no}")
 
     print("\nHint: You may use abbreviations when placing pieces (e.g. CPT H2)!")
     input("\nPress 'ENTER' to return to game.")
@@ -199,7 +189,7 @@ def set_opponent_pieces(opp=True) -> None:
         piece_obj = PIECES.get(piece).generate_piece()
         if opp:
             piece_obj.set_opp()
-            append_opp_pieces(piece_obj)
+            opp_pieces.append(piece_obj)
 
         for _ in range(n_pieces):
             x, y = randrange(9), randrange(y_lower_bound, y_upper_bound)
@@ -209,7 +199,6 @@ def set_opponent_pieces(opp=True) -> None:
 
 
 def place_pieces() -> int:
-    global remaining_pieces
     set_piece_dict()
 
     while not empty_box():
@@ -249,7 +238,7 @@ def place_pieces() -> int:
                     os.system(clear)
                     board_and_console()
                     clear_board()
-                    clear_opp_pieces()
+                    opp_pieces.clear()
                     set_console()
                     sleep(1)
                     return -1
@@ -261,7 +250,7 @@ def place_pieces() -> int:
             continue
 
         piece_input = " ".join(cmds[:-1])
-        piece_name = cn.KEYWORD_MAPPER.get(piece_input.upper())
+        piece_name = con.KEYWORD_MAPPER.get(piece_input.upper())
         if piece_name is None:
             set_console(f"Error: no such piece '{piece_input}' exists.")
             continue
@@ -292,7 +281,7 @@ def place_pieces() -> int:
 
 
 def handle_turn(result: int) -> None:
-    if result != cn.MOVE_MADE:
+    if result != con.MOVE_MADE:
         fallen = board.recently_killed()
         rank = fallen.rank
 
@@ -304,15 +293,15 @@ def handle_turn(result: int) -> None:
 
         board.restore_position()
         match result:
-            case cn.OPP_ELIM:
-                set_console(f"You ate the opponent's {fallen.name()} {cn.SYMBOLS[rank]}!")
-            case cn.USR_ELIM:
-                set_console(f"The opponent ate your {fallen.name()} {cn.SYMBOLS[rank]}!")
-            case cn.SPLIT:
+            case con.OPP_ELIM:
+                set_console(f"You ate the opponent's {fallen.name()} {con.SYMBOLS[rank]}!")
+            case con.USR_ELIM:
+                set_console(f"The opponent ate your {fallen.name()} {con.SYMBOLS[rank]}!")
+            case con.SPLIT:
                 set_console("Split! Both your pieces have been eliminated (same rank).")
-            case cn.USR_WINNER:
+            case con.USR_WINNER:
                 set_console("You ate the opponent's FLAG 🏳️ and won!")
-            case cn.OPP_WINNER:
+            case con.OPP_WINNER:
                 set_console("The opponent captured your FLAG 🏳️. Better luck next time!")
 
         if result < 0:
@@ -320,8 +309,6 @@ def handle_turn(result: int) -> None:
             os.system(clear)
             board_and_console()
             input("Press 'ENTER' to return to main menu.")
-            clear_board()
-            set_console()
             return 1
 
         os.system(clear)
@@ -362,9 +349,7 @@ def handle_game() -> None:
                     reveal_opp_pieces()
                     os.system(clear)
                     board_and_console()
-                    clear_board()
                     sleep(2)
-                    set_console()
                     break
                 continue
 
@@ -404,13 +389,13 @@ def handle_game() -> None:
             continue
 
         status, result = operation.generate_move().execute(board, x, y)
-        if status != cn.SUCCESS:
+        if status != con.SUCCESS:
             match status:
-                case cn.EMPTY_CELL:
+                case con.EMPTY_CELL:
                     set_console("Error: empty cell selected.")
-                case cn.OUT_OF_BOUNDS:
+                case con.OUT_OF_BOUNDS:
                     set_console("Error: out-of-bounds move.")
-                case cn.FRIENDLY_FIRE:
+                case con.FRIENDLY_FIRE:
                     set_console("Error: move blocked by a friendly piece.")
             continue
 
@@ -434,15 +419,16 @@ def handle_game() -> None:
         # Repeatedly choose random move until valid move is chosen
         move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
         opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
-        while opp_status != cn.SUCCESS:
+        while opp_status != con.SUCCESS:
             move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
             opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
 
         if handle_turn(opp_res):
             break
 
+    clear_board()
+    set_console()
     set_game_status(False)
-    clear_opp_pieces()
 
 
 def start() -> None:
@@ -450,7 +436,7 @@ def start() -> None:
         os.system(clear)
         board_and_console()
         print_commands()
-        print("Please input a command.")
+        print(f"Please input a command.")
         cmd = input("> ").lower()
         set_console()
 

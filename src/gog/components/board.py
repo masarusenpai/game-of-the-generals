@@ -1,5 +1,5 @@
-import constants as cn
-from components.piece import Piece, Flag, challenge_icon
+from gog.components import constants as con
+from gog.components.piece import Piece, Flag, challenge_icon
 
 
 class Board:
@@ -11,56 +11,56 @@ class Board:
         self._initialise_board()
 
     def _initialise_board(self) -> None:
-        for y in range(cn.BOARD_LEN):
+        for y in range(con.BOARD_LEN):
             self.list_repr.append([])
             curr_row = self.list_repr[y]
 
-            for _ in range(cn.BOARD_WID):
+            for _ in range(con.BOARD_WID):
                 curr_row.append(None)
 
     def print_board(self) -> None:
         print("    ", end="")
-        for i in range(cn.BOARD_WID):
+        for i in range(con.BOARD_WID):
             print(f"{chr(i + 65)}    ", end="")
 
-        print(f"\n  +{'-' * (cn.PRINT_LEN(cn.BOARD_WID) - 2)}+")
-        for y in range(cn.BOARD_LEN - 1, -1, -1):
+        print(f"\n  +{'-' * (con.PRINT_LEN(con.BOARD_WID) - 2)}+")
+        for y in range(con.BOARD_LEN - 1, -1, -1):
             print(f"{y + 1} ", end="")
-            for x in range(cn.BOARD_WID):
+            for x in range(con.BOARD_WID):
                 curr_pc = self.list_repr[y][x]
                 print(f"| {'  ' if curr_pc is None else curr_pc} ", end="")
             print("|")
 
             if y:
-                print(f"  {'-' * cn.PRINT_LEN(cn.BOARD_WID)}")
+                print(f"  {'-' * con.PRINT_LEN(con.BOARD_WID)}")
             else:
-                print(f"  +{'-' * (cn.PRINT_LEN(cn.BOARD_WID) - 2)}+")
+                print(f"  +{'-' * (con.PRINT_LEN(con.BOARD_WID) - 2)}+")
 
     def get_at(self, x: int, y: int) -> Piece | None:
         try:
             return self.list_repr[y][x]
         except IndexError:
-            wall = Piece(cn.WALL)
+            wall = Piece(con.WALL)
             wall.set_opp()
             return wall
 
     def place(self, piece: Piece, x: int, y: int) -> int:
-        code = cn.MOVE_MADE
+        code = con.MOVE_MADE
         src = piece
         dest = self.get_at(x, y)
         if dest is not None:
             src = piece.attack(dest)
             if src == piece:
-                code = cn.OPP_ELIM if not piece.opp else cn.USR_ELIM
+                code = con.OPP_ELIM if not piece.opp else con.USR_ELIM
                 self.graveyard.append(dest)
                 dest.set_pos(-1, -1)
             elif src is None:
-                code = cn.SPLIT
+                code = con.SPLIT
                 self.graveyard.append(dest)
                 piece.set_pos(-1, -1)
                 dest.set_pos(-1, -1)
             else:
-                code = cn.USR_ELIM if not piece.opp else cn.OPP_ELIM
+                code = con.USR_ELIM if not piece.opp else con.OPP_ELIM
                 self.graveyard.append(piece)
                 piece.set_pos(-1, -1)
 

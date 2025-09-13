@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from components.board import Board
-import constants as cn
+from gog.components import constants as con
+from gog.components.board import Board
 
 
 class Move(ABC):
@@ -17,68 +17,68 @@ class MoveUp(Move):
     def execute(self, board, x, y):
         my_piece = board.get_at(x, y)
         if my_piece is None:
-            return cn.EMPTY_CELL, -1
+            return con.EMPTY_CELL, -1
 
-        if y >= cn.BOARD_LEN - 1:
-            return cn.OUT_OF_BOUNDS, -1
+        if y >= con.BOARD_LEN - 1:
+            return con.OUT_OF_BOUNDS, -1
 
         block = board.get_at(x, y + 1)
         if block is not None and block.opp == my_piece.opp:
-            return cn.FRIENDLY_FIRE, -1
+            return con.FRIENDLY_FIRE, -1
 
         board.clear(x, y)
-        return cn.SUCCESS, board.place(my_piece, x, y + 1)
+        return con.SUCCESS, board.place(my_piece, x, y + 1)
 
 
 class MoveDown(Move):
     def execute(self, board, x, y):
         my_piece = board.get_at(x, y)
         if my_piece is None:
-            return cn.EMPTY_CELL, -1
+            return con.EMPTY_CELL, -1
 
         if y <= 0:
-            return cn.OUT_OF_BOUNDS, -1
+            return con.OUT_OF_BOUNDS, -1
 
         block = board.get_at(x, y - 1)
         if block is not None and block.opp == my_piece.opp:
-            return cn.FRIENDLY_FIRE, -1
+            return con.FRIENDLY_FIRE, -1
 
         board.clear(x, y)
-        return cn.SUCCESS, board.place(my_piece, x, y - 1)
+        return con.SUCCESS, board.place(my_piece, x, y - 1)
 
 
 class MoveRight(Move):
     def execute(self, board, x, y):
         my_piece = board.get_at(x, y)
         if my_piece is None:
-            return cn.EMPTY_CELL, -1
+            return con.EMPTY_CELL, -1
 
-        if x >= cn.BOARD_WID - 1:
-            return cn.OUT_OF_BOUNDS, -1
+        if x >= con.BOARD_WID - 1:
+            return con.OUT_OF_BOUNDS, -1
 
         block = board.get_at(x + 1, y)
         if block is not None and block.opp == my_piece.opp:
-            return cn.FRIENDLY_FIRE, -1
+            return con.FRIENDLY_FIRE, -1
 
         board.clear(x, y)
-        return cn.SUCCESS, board.place(my_piece, x + 1, y)
+        return con.SUCCESS, board.place(my_piece, x + 1, y)
 
 
 class MoveLeft(Move):
     def execute(self, board, x, y):
         my_piece = board.get_at(x, y)
         if my_piece is None:
-            return cn.EMPTY_CELL, -1
+            return con.EMPTY_CELL, -1
 
         if x <= 0:
-            return cn.OUT_OF_BOUNDS, -1
+            return con.OUT_OF_BOUNDS, -1
 
         block = board.get_at(x - 1, y)
         if block is not None and block.opp == my_piece.opp:
-            return cn.FRIENDLY_FIRE, -1
+            return con.FRIENDLY_FIRE, -1
 
         board.clear(x, y)
-        return cn.SUCCESS, board.place(my_piece, x - 1, y)
+        return con.SUCCESS, board.place(my_piece, x - 1, y)
 
 
 class MoveFactory(ABC):

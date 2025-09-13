@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-import constants as cn
+from gog.components import constants as con
 
 
 class Piece:
@@ -8,7 +8,7 @@ class Piece:
         self.rank = rank
         self._x_pos = -1
         self._y_pos = -1
-        self.symb = cn.SYMBOLS[self.rank]
+        self.symb = con.SYMBOLS[self.rank]
         self.opp = False
 
     def get_pos(self) -> tuple[int, int]:
@@ -20,7 +20,7 @@ class Piece:
 
     def set_opp(self) -> None:
         self.opp = True
-    
+
     def reveal(self) -> None:
         self.opp = False
 
@@ -41,6 +41,10 @@ class Piece:
 class Flag(Piece):
     def __init__(self):
         super().__init__(0)
+    
+    def set_opp(self):
+        self.opp = True
+        self.symb = "🏴"
 
     def attack(self, target):
         return self if self.rank == target.rank else target
@@ -212,7 +216,7 @@ class SpyFactory(PieceFactory):
     
 
 def challenge_icon() -> Piece:
-    return Piece(cn.CHALLENGE)
+    return Piece(con.CHALLENGE)
 
 
 PIECES: dict[str, PieceFactory] = {
