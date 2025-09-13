@@ -1,5 +1,5 @@
-from gog.components import constants as con
 from gog.components.piece import Piece, Flag, challenge_icon
+from gog.config import constants as con
 
 
 class Board:

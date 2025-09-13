@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from gog.components import constants as con
+from gog.config import constants as con
 
 
 class Piece:
