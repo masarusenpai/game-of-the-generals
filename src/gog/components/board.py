@@ -56,6 +56,7 @@ class Board:
                 dest.set_pos(-1, -1)
             elif src is None:
                 code = con.SPLIT
+                self.graveyard.append(piece)
                 self.graveyard.append(dest)
                 piece.set_pos(-1, -1)
                 dest.set_pos(-1, -1)

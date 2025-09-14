@@ -83,7 +83,7 @@ def display_rules() -> None:
     
     with open("../resources/rules.txt", "r") as fd:
         for line in fd.readlines():
-            print(line)
+            print(line, end="")
 
     if in_game:
         input_message = f"\nPress {BOLD('[ENTER]')} to return to game."
@@ -204,12 +204,11 @@ def set_opponent_pieces(opp=True) -> None:
             case "SPY":
                 n_pieces = 2
 
-        piece_obj = PIECES.get(piece).generate_piece()
-        if opp:
-            piece_obj.set_opp()
-            opp_pieces.append(piece_obj)
-
         for _ in range(n_pieces):
+            piece_obj = PIECES.get(piece).generate_piece()
+            if opp:
+                piece_obj.set_opp()
+                opp_pieces.append(piece_obj)
             x, y = randrange(9), randrange(y_lower_bound, y_upper_bound)
             while board.get_at(x, y) is not None:
                 x, y = randrange(9), randrange(y_lower_bound, y_upper_bound)
@@ -454,7 +453,7 @@ def handle_game() -> None:
         # Repeatedly choose random piece until valid movable piece is chosen
         opp_choice = opp_pieces[randrange(len(opp_pieces))]
         opp_x, opp_y = opp_choice.get_pos()
-        while ((opp_x == -1 and opp_y == -1)
+        while ((opp_x < 0 and opp_y < 0)
                 or board.is_surrounded(opp_choice)
                 or not opp_choice.opp):
             opp_choice = opp_pieces[randrange(len(opp_pieces))]
