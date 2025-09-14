@@ -67,4 +67,6 @@ $ sudo apt install termcolor
 
 Alternatively, you may also follow the **source installation** directions on `termcolor`'s [GitHub repository](https://github.com/termcolor/termcolor) (if you're into that).
 
+---
+
 > *Para kay Trish, sinta ko*
