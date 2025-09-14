@@ -10,6 +10,8 @@ You are given 21 pieces representing different combantants in an army, including
 
 The game is played on a 9×8 board. The layout of your 21 pieces may be arranged however you like, as long as they are within the nearest 3 rows of the board. Alternatively, you have the option to randomise the positions of the pieces.
 
+<img width="477" height="372" alt="image" src="https://github.com/user-attachments/assets/3d094ff2-cbd6-49a3-b043-5d3a949eb8d7" />
+
 All 21 pieces are arranged into different ranks. The main idea is that any higher-ranking piece may eliminate a lower-ranking piece. If both pieces are of the same rank, both are eliminated. Note that there are a few exceptions to these rules. Below is a table listing all pieces arranged from lowest to highest rank, as well as some additional notes/exceptions.
 
 |Piece              |Note                                            |
