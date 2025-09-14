@@ -1,3 +1,5 @@
+![](resources/logo.png)
+
 # Game of the Generals
 A singleplayer Python recreation of [Game of the Generals](https://en.wikipedia.org/wiki/Game_of_the_Generals), a Filipino educational war game.
 
