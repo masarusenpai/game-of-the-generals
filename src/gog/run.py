@@ -91,9 +91,9 @@ def display_rules() -> None:
     print((" " * 14) + to_banner("RULES"))
     print()
     
-    # with open("../resources/rules.txt", "r") as fd:
-    #     for line in fd.readlines():
-    #         print(line, end="")
+    with open("../resources/rules.txt", "r") as fd:
+        for line in fd.readlines():
+            print(line, end="")
 
     if in_game:
         input_message = f"\nPress {BOLD('[ENTER]')} to return to game."
@@ -204,11 +204,6 @@ def set_opponent_pieces(opp=True) -> None:
         n_pieces = 1
 
         match piece:
-            case "FLAG":
-                if opp:
-                    y_lower_bound = 6
-                else:
-                    y_upper_bound = 2
             case "PRIVATE":
                 n_pieces = 6
             case "SPY":
@@ -294,7 +289,7 @@ def place_pieces() -> int:
 
         pos_input = cmds[-1]
         x, y = parse_coords(pos_input)
-        if x is None and y is None:
+        if (x is None and y is None) or y > 2:
             set_console_status("ERROR", "red")
             set_console(f"Invalid or forbidden position '{pos_input}'.")
             continue
