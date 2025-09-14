@@ -1,8 +1,14 @@
+"""
+Module containing the `Board` class.
+"""
 from gog.components.piece import Piece, Flag, challenge_icon
 from gog.config import constants as con
 
 
 class Board:
+    """
+    Class representing the game board.
+    """
     def __init__(self) -> None:
         self.list_repr: list[list[Piece | None]] = []
         self.graveyard: list[Piece] = []
@@ -13,9 +19,12 @@ class Board:
             self.list_repr.append([])
             curr_row = self.list_repr[y]
             for _ in range(con.BOARD_WID):
-                curr_row.append(None)        
+                curr_row.append(None)
 
     def print_board(self) -> None:
+        """
+        Print the game board to `stdout`.
+        """
         print("    ", end="")
         for i in range(con.BOARD_WID):
             print(f"{chr(i + 65)}    ", end="")
@@ -34,6 +43,10 @@ class Board:
                 print(f"  +{'-' * (con.PRINT_LEN(con.BOARD_WID) - 2)}+")
 
     def get_at(self, x: int, y: int) -> Piece | None:
+        """
+        Get the `Piece` object on the board at position (`x`, `y`). Returns `None` if position is
+        empty or a 'wall' if position is out-of-bounds.
+        """
         try:
             return self.list_repr[y][x]
         except IndexError:
@@ -42,6 +55,10 @@ class Board:
             return wall
 
     def place(self, piece: Piece, x: int, y: int) -> int:
+        """
+        Place a `Piece` object at position (`x`, `y`). Returns a status code indicating the current
+        game status. Also manages the bulk of game elimination logic.
+        """
         code = con.MOVE_MADE
         src = piece
         dest = self.get_at(x, y)
@@ -71,21 +88,32 @@ class Board:
 
         if code == con.MOVE_MADE and isinstance(piece, Flag):
             if y == con.BOARD_LEN - 1 and not piece.opp:
-                code = con.USR_END if self.can_be_attacked(piece) else con.USR_WINNER
+                code = con.USR_END if self.can_be_challenged(piece) else con.USR_WINNER
             elif not y and piece.opp:
-                code = con.OPP_END if self.can_be_attacked(piece) else con.OPP_WINNER
+                code = con.OPP_END if self.can_be_challenged(piece) else con.OPP_WINNER
 
         return code
 
     def clear(self, x: int, y: int) -> None:
+        """
+        Clear position (`x`, `y`) on the board.
+        """
         self.list_repr[y][x] = None
 
     def recently_killed(self) -> Piece | None:
+        """
+        Returns the most recently killed `Piece` object. Technically returns `None` if no pieces
+        have been killed yet, but this should not happen in-game.
+        """
         if not self.graveyard:
             return None # This should never happen!
         return self.graveyard[-1]
 
     def undo_place(self) -> Piece | None:
+        """
+        Remove the last `Piece` object placed on the board and return it. If there's nothing to
+        undo, return `None`.
+        """
         if not self.cache:
             return None
         x, y = self.cache.pop()
@@ -94,6 +122,11 @@ class Board:
         return piece
 
     def challenge(self, restore=False) -> None:
+        """
+        Set a challenge icon at the position where the last elimination occurred. After the
+        'challenge' animation sequence, when `restore` is set to `True`, return the original piece
+        to its original position.
+        """
         x, y = self.cache[-1]
         if restore:
             x, y = self.cache[-1]
@@ -107,6 +140,10 @@ class Board:
             self.place(challenge_icon(), x, y)
 
     def is_surrounded(self, piece: Piece) -> bool:
+        """
+        Returns whether an opponent piece is surrounded by other opponent pieces (or walls, which
+        have `self.op = True` by default).
+        """
         x, y = piece.get_pos()
         adjacent = [
             self.get_at(x + 1, y), self.get_at(x - 1, y),
@@ -114,7 +151,10 @@ class Board:
         ]
         return all(adj_piece is not None and adj_piece.opp for adj_piece in adjacent)
 
-    def can_be_attacked(self, piece: Piece) -> bool:
+    def can_be_challenged(self, piece: Piece) -> bool:
+        """
+        Indicates whether a piece can be challenged by an adjacent opposing piece.
+        """
         x, y = piece.get_pos()
         adjacent = [
             self.get_at(x + 1, y), self.get_at(x - 1, y),
