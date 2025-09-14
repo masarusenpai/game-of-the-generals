@@ -31,7 +31,8 @@ def set_piece_dict() -> None:
 
 def clear_game() -> None:
     """
-    Clear (mostly) all game-related variables (`Board` object, list of opponent pieces, final state).
+    Clear (mostly) all game-related variables (`Board` object, list of opponent pieces, final
+    state).
     """
     global board, final_state
     board = Board()
@@ -90,7 +91,7 @@ def display_rules() -> None:
     print("\n\n")
     print((" " * 14) + to_banner("RULES"))
     print()
-    
+
     with open("../resources/rules.txt", "r") as fd:
         for line in fd.readlines():
             print(line, end="")
