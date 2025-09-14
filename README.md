@@ -3,6 +3,8 @@
 # Game of the Generals
 A singleplayer Python recreation of [Game of the Generals](https://en.wikipedia.org/wiki/Game_of_the_Generals), a Filipino educational war game.
 
+**Note:** For optimal experience, please ensure your terminal properly handles all emojis as 'wide characters' (with width 2)!
+
 ## Quick start
 
 ```bash
