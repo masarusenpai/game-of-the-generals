@@ -8,15 +8,12 @@ class Board:
         self.graveyard: list[Piece] = []
         self.cache: list[tuple[int, int]] = []
         self.challenge_restore: list[Piece] = []
-        self._initialise_board()
 
-    def _initialise_board(self) -> None:
         for y in range(con.BOARD_LEN):
             self.list_repr.append([])
             curr_row = self.list_repr[y]
-
             for _ in range(con.BOARD_WID):
-                curr_row.append(None)
+                curr_row.append(None)        
 
     def print_board(self) -> None:
         print("    ", end="")
@@ -71,6 +68,13 @@ class Board:
         self.list_repr[y][x] = src
         self.cache.append((x, y))
         piece.set_pos(x, y)
+
+        if code == con.MOVE_MADE and isinstance(piece, Flag):
+            if y == con.BOARD_LEN - 1 and not piece.opp:
+                code = con.USR_END if self.can_be_attacked(piece) else con.USR_WINNER
+            elif not y and piece.opp:
+                code = con.OPP_END if self.can_be_attacked(piece) else con.OPP_WINNER
+
         return code
 
     def clear(self, x: int, y: int) -> None:
@@ -89,22 +93,36 @@ class Board:
         self.clear(x, y)
         return piece
 
-    def set_challenge(self) -> None:
+    def challenge(self, restore=False) -> None:
         x, y = self.cache[-1]
-        loc = self.get_at(x, y)
-        if loc is not None:
-            self.challenge_restore.append(loc)
-        self.place(challenge_icon(), x, y)
-
-    def restore_position(self) -> None:
-        x, y = self.cache[-1]
-        self.clear(x, y)
-        if self.challenge_restore:
-            self.place(self.challenge_restore.pop(), x, y)
+        if restore:
+            x, y = self.cache[-1]
+            self.clear(x, y)
+            if self.challenge_restore:
+                self.place(self.challenge_restore.pop(), x, y)
+        else:
+            loc = self.get_at(x, y)
+            if loc is not None:
+                self.challenge_restore.append(loc)
+            self.place(challenge_icon(), x, y)
 
     def is_surrounded(self, piece: Piece) -> bool:
         x, y = piece.get_pos()
-        return self.get_at(x + 1, y) is not None and self.get_at(x + 1, y).opp \
-               and self.get_at(x - 1, y) is not None and self.get_at(x - 1, y).opp \
-               and self.get_at(x, y + 1) is not None and self.get_at(x, y + 1).opp \
-               and self.get_at(x, y - 1) is not None and self.get_at(x, y - 1).opp
+        adjacent = [
+            self.get_at(x + 1, y), self.get_at(x - 1, y),
+            self.get_at(x, y + 1), self.get_at(x, y - 1)
+        ]
+        return all(adj_piece is not None and adj_piece.opp for adj_piece in adjacent)
+
+    def can_be_attacked(self, piece: Piece) -> bool:
+        x, y = piece.get_pos()
+        adjacent = [
+            self.get_at(x + 1, y), self.get_at(x - 1, y),
+            self.get_at(x, y + 1), self.get_at(x, y - 1)
+        ]
+        for adj_piece in adjacent:
+            if (adj_piece is not None
+                    and adj_piece.opp != piece.opp
+                    and adj_piece.rank != con.WALL):
+                return True
+        return False

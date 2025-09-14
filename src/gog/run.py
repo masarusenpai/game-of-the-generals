@@ -1,6 +1,5 @@
 import os
 from random import randrange
-from shutil import get_terminal_size
 from time import sleep
 from gog.components.board import Board
 from gog.components.operation import MOVES
@@ -12,11 +11,11 @@ from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
 remaining_pieces: dict[str, int]
 opp_pieces: list[Piece] = []
 
-size = get_terminal_size().columns
 clear = ""
 console = ""
 marker = ""
 in_game = False
+final_state = 0
 board = Board()
 
 
@@ -30,13 +29,14 @@ def set_piece_dict() -> None:
     }
 
 
-def clear_board() -> None:
+def clear_game() -> None:
     """
-    Simply clear the `Board` object (at the end of the game usually).
+    Clear (mostly) all game-related variables (`Board` object, list of opponent pieces, final state).
     """
-    global board
+    global board, final_state
     board = Board()
     opp_pieces.clear()
+    final_state = 0
 
 
 def set_console_status(status="GAME", colour="white") -> None:
@@ -60,6 +60,16 @@ def set_game_status(status: bool) -> None:
     in_game = status
 
 
+def set_final_state(code: int) -> None:
+    global final_state
+    final_state = code
+
+
+def dead_opp(opp: Piece) -> bool:
+    x, y = opp.get_pos()
+    return x < 0 and y < 0
+
+
 def reveal_opp_pieces() -> None:
     for piece in opp_pieces:
         piece.reveal()
@@ -81,9 +91,9 @@ def display_rules() -> None:
     print((" " * 14) + to_banner("RULES"))
     print()
     
-    with open("../resources/rules.txt", "r") as fd:
-        for line in fd.readlines():
-            print(line, end="")
+    # with open("../resources/rules.txt", "r") as fd:
+    #     for line in fd.readlines():
+    #         print(line, end="")
 
     if in_game:
         input_message = f"\nPress {BOLD('[ENTER]')} to return to game."
@@ -246,7 +256,7 @@ def place_pieces() -> int:
                     set_console("Randomising piece positions...")
                     os.system(clear)
                     board_and_console()
-                    clear_board()
+                    clear_game()
                     sleep(1)
                     set_opponent_pieces(opp=False)
                     set_console()
@@ -258,7 +268,7 @@ def place_pieces() -> int:
                     set_console("Exiting to main menu...")
                     os.system(clear)
                     board_and_console()
-                    clear_board()
+                    clear_game()
                     opp_pieces.clear()
                     set_console()
                     sleep(1)
@@ -309,17 +319,22 @@ def place_pieces() -> int:
 
 def handle_turn(result: int) -> None:
     set_console_status()
+
     if result != con.MOVE_MADE:
+        if result == con.USR_END or result == con.OPP_END:
+            set_final_state(result)
+            set_console("It's your turn!")
+            return 0
+
         fallen = board.recently_killed()
         rank = fallen.rank
-
         set_console("CHALLENGE! Examining outcome...")
-        board.set_challenge()
+        board.challenge()
         os.system(clear)
         board_and_console()
         sleep(1)
+        board.challenge(restore=True)
 
-        board.restore_position()
         match result:
             case con.OPP_ELIM:
                 set_console(f"You ate the opponent's {fallen.name()} {con.SYMBOLS[rank]}!")
@@ -329,12 +344,12 @@ def handle_turn(result: int) -> None:
                 set_console("Split! Both your pieces have been eliminated (same rank).")
             case con.USR_WINNER:
                 set_console_status("VICTORY", "green")
-                set_console("You ate the opponent's FLAG 🏳️ and won!")
+                set_console("You ate the opponent's FLAG 🏴 and won!")
             case con.OPP_WINNER:
                 set_console_status("GAME OVER", "red")
                 set_console("The opponent captured your FLAG 🏳️.")
 
-        if result < 0:
+        if result < 0: # i.e. if result == con.USR_WINNER or result == con.OPP_WINNER
             reveal_opp_pieces()
             os.system(clear)
             board_and_console()
@@ -344,9 +359,23 @@ def handle_turn(result: int) -> None:
         os.system(clear)
         board_and_console()
         sleep(2)
+    
+    match final_state:
+        case con.USR_END:
+            set_console_status("VICTORY", "green")
+            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
+        case con.OPP_END:
+            set_console_status("GAME OVER", "red")
+            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
+        case _:
+            set_console("It's your turn!")
+            return 0
 
-    set_console("It's your turn!")
-    return 0
+    reveal_opp_pieces()
+    os.system(clear)
+    board_and_console()
+    input("Press 'ENTER' to return to main menu.")
+    return 1
 
 
 def handle_game() -> None:
@@ -453,7 +482,7 @@ def handle_game() -> None:
         # Repeatedly choose random piece until valid movable piece is chosen
         opp_choice = opp_pieces[randrange(len(opp_pieces))]
         opp_x, opp_y = opp_choice.get_pos()
-        while ((opp_x < 0 and opp_y < 0)
+        while (dead_opp(opp_choice)
                 or board.is_surrounded(opp_choice)
                 or not opp_choice.opp):
             opp_choice = opp_pieces[randrange(len(opp_pieces))]
@@ -469,7 +498,7 @@ def handle_game() -> None:
         if handle_turn(opp_res):
             break
 
-    clear_board()
+    clear_game()
     set_console()
     set_game_status(False)
 
