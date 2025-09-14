@@ -1,17 +1,21 @@
 import os
 from random import randrange
+from shutil import get_terminal_size
 from time import sleep
-from gog.components import constants as con
 from gog.components.board import Board
 from gog.components.operation import MOVES
 from gog.components.piece import PIECES, Piece
+from gog.config import constants as con
+from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
 
 
 remaining_pieces: dict[str, int]
 opp_pieces: list[Piece] = []
 
+size = get_terminal_size().columns
 clear = ""
 console = ""
+marker = ""
 in_game = False
 board = Board()
 
@@ -35,12 +39,20 @@ def clear_board() -> None:
     opp_pieces.clear()
 
 
+def set_console_status(status="GAME", colour="white") -> None:
+    global marker
+    marker = marker_formatting(status, colour)
+
+
 def set_console(message="") -> None:
     """
     Display `message` to game console. By default, console message is set to blank.
     """
     global console
-    console = message
+    if message:
+        console = f"{marker} {message}"
+    else:
+        console = ""
 
 
 def set_game_status(status: bool) -> None:
@@ -57,7 +69,7 @@ def board_and_console() -> None:
     print()
     print(console)
     print()
-    print("=== ⭐ GAME OF THE GENERALS ⭐ ===".center(con.PRINT_LEN(con.BOARD_WID)))
+    print((" " * 7) + to_banner("GAME OF THE GENERALS"))
     print()
     board.print_board()
     print()
@@ -66,29 +78,34 @@ def board_and_console() -> None:
 def display_rules() -> None:
     os.system(clear)
     print("\n\n")
-    print("=== ⭐ RULES ⭐ ===\n".center(con.PRINT_LEN(con.BOARD_WID)))
-    print("Rules coming soon...") # TODO: rules
+    print((" " * 14) + to_banner("RULES"))
+    print()
+    
+    with open("../resources/rules.txt", "r") as fd:
+        for line in fd.readlines():
+            print(line)
 
     if in_game:
-        input_message = "\nPress 'ENTER' to return to game."
+        input_message = f"\nPress {BOLD('[ENTER]')} to return to game."
     else:
-        input_message = "\nPress 'ENTER' to return to main menu."
+        input_message = f"\nPress {BOLD('[ENTER]')} to return to main menu."
     input(input_message)
 
 
 def display_legend() -> None:
     os.system(clear)
     print("\n\n")
-    print("=== ⭐ LEGEND ⭐ ===\n".center(con.PRINT_LEN(con.BOARD_WID)))
+    print((" " * 14) + to_banner("LEGEND"))
+    print()
     print("EMOJI                                    PIECE")
     print("=" * con.PRINT_LEN(con.BOARD_WID))
     for i, piece in enumerate(list(PIECES)):
         print(f"{con.SYMBOLS[i]}{piece.rjust(con.PRINT_LEN(con.BOARD_WID) - 2)}")
 
     if in_game:
-        input_message = "\nPress 'ENTER' to return to game."
+        input_message = f"\nPress {BOLD('[ENTER]')} to return to game."
     else:
-        input_message = "\nPress 'ENTER' to return to main menu."
+        input_message = f"\nPress {BOLD('[ENTER]')} to return to main menu."
     input(input_message)
 
 
@@ -145,7 +162,8 @@ def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
 def show_piece_box() -> None:
     os.system(clear)
     print("\n\n")
-    print("=== ⭐ REMAINING PIECES ⭐ ===\n".center(con.PRINT_LEN(con.BOARD_WID)))
+    print((" " * 9) + to_banner("REMAINING PIECES"))
+    print()
 
     for i, (piece, no) in enumerate(remaining_pieces.items()):
         if i == len(remaining_pieces) - 1:
@@ -157,7 +175,7 @@ def show_piece_box() -> None:
             print(f"{(piece + keyword).ljust(con.PRINT_LEN(con.BOARD_WID) - 2)}{no}")
 
     print("\nHint: You may use abbreviations when placing pieces (e.g. CPT H2)!")
-    input("\nPress 'ENTER' to return to game.")
+    input(f"\nPress {BOLD('[ENTER]')} to return to game.")
 
 
 def verify_user_action(action: str) -> bool:
@@ -165,8 +183,8 @@ def verify_user_action(action: str) -> bool:
     os.system(clear)
     board_and_console()
     print(f"Are you sure you wish to {action}?")
-    print("Enter 'YES' to confirm your choice or anything else to reject it.")
-    return input("> ").lower() == "yes"
+    print(f"Enter {BOLD('YES')} to confirm your choice or anything else to reject it.")
+    return input(BLINK("> ")).lower() == "yes"
 
 
 def set_opponent_pieces(opp=True) -> None:
@@ -207,7 +225,7 @@ def place_pieces() -> int:
         print("Add pieces to the board with the command <PIECE> <POSITION> (e.g. FLAG A3).")
         print("When all pieces are added, you will prompted to start the game.\n")
         print_pre_game_commands()
-        cmd = input("> ")
+        cmd = input(BLINK("> "))
 
         match cmd.lower():
             case "piece" | "p":
@@ -216,13 +234,16 @@ def place_pieces() -> int:
             case "undo" | "u":
                 removed_piece = board.undo_place()
                 if removed_piece is None:
-                    set_console("Error: nothing to undo.")
+                    set_console_status("ERROR", "red")
+                    set_console("Nothing to undo.")
                 else:
-                    set_console(f"Undo: removed {removed_piece.name()}.")
+                    set_console_status()
+                    set_console(f"Removed {removed_piece.name()}.")
                     remaining_pieces[removed_piece.name()] += 1
                 continue
             case "!":
                 if verify_user_action("randomise piece positions"):
+                    set_console_status()
                     set_console("Randomising piece positions...")
                     os.system(clear)
                     board_and_console()
@@ -234,6 +255,7 @@ def place_pieces() -> int:
                 continue
             case "exit" | "e":
                 if verify_user_action("exit"):
+                    set_console_status()
                     set_console("Exiting to main menu...")
                     os.system(clear)
                     board_and_console()
@@ -246,29 +268,35 @@ def place_pieces() -> int:
 
         cmds = cmd.split()
         if len(cmds) < 2:
-            set_console("Error: invalid command.")
+            set_console_status("ERROR", "red")
+            set_console("Invalid command.")
             continue
 
         piece_input = " ".join(cmds[:-1])
         piece_name = con.KEYWORD_MAPPER.get(piece_input.upper())
         if piece_name is None:
-            set_console(f"Error: no such piece '{piece_input}' exists.")
+            set_console_status("ERROR", "red")
+            set_console(f"No such piece '{piece_input}' exists.")
             continue
         if not remaining_pieces.get(piece_name):
-            set_console(f"Error: all pieces of {piece_name} have already been placed.")
+            set_console_status("ERROR", "red")
+            set_console(f"All pieces of {piece_name} have already been placed.")
             continue
 
         pos_input = cmds[-1]
         x, y = parse_coords(pos_input)
         if x is None and y is None:
-            set_console(f"Error: invalid or forbidden position '{pos_input}'.")
+            set_console_status("ERROR", "red")
+            set_console(f"Invalid or forbidden position '{pos_input}'.")
             continue
 
         pos = pos_input.upper()
         if board.get_at(x, y) is not None:
-            set_console(f"Error: {pos} occupied by {board.get_at(x, y).name()}.")
+            set_console_status("ERROR", "red")
+            set_console(f"{pos} occupied by {board.get_at(x, y).name()}.")
             continue
 
+        set_console_status()
         piece = PIECES.get(piece_name).generate_piece()
         remaining_pieces[piece_name] -= 1
         set_console(f"{piece_name} placed at position {pos}!")
@@ -281,6 +309,7 @@ def place_pieces() -> int:
 
 
 def handle_turn(result: int) -> None:
+    set_console_status()
     if result != con.MOVE_MADE:
         fallen = board.recently_killed()
         rank = fallen.rank
@@ -300,9 +329,11 @@ def handle_turn(result: int) -> None:
             case con.SPLIT:
                 set_console("Split! Both your pieces have been eliminated (same rank).")
             case con.USR_WINNER:
+                set_console_status("VICTORY", "green")
                 set_console("You ate the opponent's FLAG 🏳️ and won!")
             case con.OPP_WINNER:
-                set_console("The opponent captured your FLAG 🏳️. Better luck next time!")
+                set_console_status("GAME OVER", "red")
+                set_console("The opponent captured your FLAG 🏳️.")
 
         if result < 0:
             reveal_opp_pieces()
@@ -325,6 +356,7 @@ def handle_game() -> None:
         return
 
     os.system(clear)
+    set_console_status()
     set_console("Your opponent (simulation) is placing its pieces...")
     board_and_console()
     sleep(1)
@@ -337,7 +369,7 @@ def handle_game() -> None:
         board_and_console()
         print("To move pieces, use the command <POS> <OPERATION> (e.g. A3 UP).\n")
         print_in_game_commands()
-        cmd = input("> ")
+        cmd = input(BLINK("> "))
 
         match cmd.lower():
             case "rules" | "r":
@@ -345,30 +377,37 @@ def handle_game() -> None:
                 continue
             case "forfeit":
                 if verify_user_action("forfeit"):
+                    set_console_status()
                     set_console("Game forfeited. Exiting to main menu...")
                     reveal_opp_pieces()
                     os.system(clear)
                     board_and_console()
                     sleep(2)
                     break
+
+                set_console("It's your turn!")
                 continue
 
         cmds = cmd.split()
         if len(cmds) != 2:
+            set_console_status("ERROR", "red")
             set_console(f"Error: invalid command '{cmd}'.")
             continue
 
         if cmds[0].lower() == 'which':
             x, y = parse_coords(cmds[1])
             if x is None and y is None:
+                set_console_status("ERROR", "red")
                 set_console(f"Error: invalid position '{cmds[1]}'.")
                 continue
 
             selected_piece = board.get_at(x, y)
             if selected_piece is None:
+                set_console_status("ERROR", "red")
                 set_console("Error: blank position selected.")
                 continue
 
+            set_console_status()
             if selected_piece.opp:
                 set_console(f"Piece at {cmds[1].upper()}: UNKNOWN (enemy piece selected)")
             else:
@@ -377,19 +416,23 @@ def handle_game() -> None:
 
         x, y = parse_coords(cmds[0])
         if x is None and y is None:
+            set_console_status("ERROR", "red")
             set_console(f"Error: invalid position '{cmds[0]}'.")
             continue
         operation = MOVES.get(cmds[1].lower())
         if operation is None:
+            set_console_status("ERROR", "red")
             set_console(f"Error: invalid operation '{cmds[1]}'.")
             continue
 
         if board.get_at(x, y) is not None and board.get_at(x, y).opp:
+            set_console_status("ERROR", "red")
             set_console("Error: enemy piece selected.")
             continue
 
         status, result = operation.generate_move().execute(board, x, y)
         if status != con.SUCCESS:
+            set_console_status("ERROR", "red")
             match status:
                 case con.EMPTY_CELL:
                     set_console("Error: empty cell selected.")
@@ -402,6 +445,7 @@ def handle_game() -> None:
         if handle_turn(result):
             break
 
+        set_console_status()
         set_console("It's the opponent's turn. Calculating move...")
         os.system(clear)
         board_and_console()
@@ -437,10 +481,11 @@ def start() -> None:
         board_and_console()
         print_commands()
         print(f"Please input a command.")
-        cmd = input("> ").lower()
+        cmd = input(BLINK("> "))
+        set_console_status()
         set_console()
 
-        match cmd:
+        match cmd.lower():
             case "play" | "p":
                 set_game_status(True)
                 handle_game()
@@ -455,6 +500,7 @@ def start() -> None:
                 sleep(2)
                 break
             case _:
+                set_console_status("ERROR", "red")
                 set_console(f"'{cmd}': invalid command.")
 
 
