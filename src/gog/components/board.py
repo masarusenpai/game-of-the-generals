@@ -1,7 +1,7 @@
 """
 Module containing the `Board` class.
 """
-from gog.components.piece import Piece, Flag, challenge_icon
+from gog.components.piece import Piece, Flag, challenge_icon, Private
 from gog.config import constants as con
 
 
@@ -68,17 +68,12 @@ class Board:
             if src == piece:
                 code = con.OPP_ELIM if not piece.opp else con.USR_ELIM
                 self.graveyard.append(dest)
-                dest.set_pos(-1, -1)
             elif src is None:
                 code = con.SPLIT
-                self.graveyard.append(piece)
-                self.graveyard.append(dest)
-                piece.set_pos(-1, -1)
-                dest.set_pos(-1, -1)
+                self.graveyard.append(piece if piece.opp else dest)
             else:
                 code = con.USR_ELIM if not piece.opp else con.OPP_ELIM
                 self.graveyard.append(piece)
-                piece.set_pos(-1, -1)
 
             if isinstance(self.graveyard[-1], Flag):
                 code *= -1
