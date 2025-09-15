@@ -492,8 +492,8 @@ def handle_game() -> None:
 
         opp_x, opp_y = -1, -1
         if challenger_pieces:
-            print(f"challengers found: {challenger_pieces}")
-            sleep(2)
+            # print(f"challengers found: {challenger_pieces}")
+            # sleep(2)
             random_i = randrange(len(challenger_pieces))
             opp_choice = challenger_pieces[random_i]
             opp_x, opp_y = opp_choice.get_pos()
