@@ -89,9 +89,9 @@ class Board:
 
         if code == con.MOVE_MADE and isinstance(piece, Flag):
             if y == con.BOARD_LEN - 1 and not piece.opp:
-                code = con.USR_END if self.can_be_challenged(piece) else con.USR_WINNER
+                code = con.USR_END if self.can_be_challenged(piece) else con.USR_AUTO_WIN
             elif not y and piece.opp:
-                code = con.OPP_END if self.can_be_challenged(piece) else con.OPP_WINNER
+                code = con.OPP_END if self.can_be_challenged(piece) else con.OPP_AUTO_WIN
 
         return code
 

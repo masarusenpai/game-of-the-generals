@@ -318,13 +318,32 @@ def place_pieces() -> int:
 
 def handle_turn(result: int) -> None:
     set_console_status()
-
-    if result != con.MOVE_MADE:
-        if result == con.USR_END or result == con.OPP_END:
+    match result:
+        case con.USR_END | con.OPP_END:
             set_final_state(result)
             set_console("It's your turn!")
             return 0
+        case con.USR_AUTO_WIN:
+            set_final_state(con.USR_END)
+        case con.OPP_AUTO_WIN:
+            set_final_state(con.OPP_END)
 
+    match final_state:
+        case con.USR_END:
+            set_console_status("VICTORY", "green")
+            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
+        case con.OPP_END:
+            set_console_status("GAME OVER", "red")
+            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
+
+    if final_state: # i.e. if final_state matches any of the above cases
+        reveal_opp_pieces()
+        os.system(clear)
+        board_and_console()
+        input("Press 'ENTER' to return to main menu.")
+        return 1
+
+    if result != con.MOVE_MADE:
         fallen = board.recently_killed()
         rank = fallen.rank
         set_console("CHALLENGE! Examining outcome...")
@@ -359,22 +378,8 @@ def handle_turn(result: int) -> None:
         board_and_console()
         sleep(2)
 
-    match final_state:
-        case con.USR_END:
-            set_console_status("VICTORY", "green")
-            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
-        case con.OPP_END:
-            set_console_status("GAME OVER", "red")
-            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
-        case _:
-            set_console("It's your turn!")
-            return 0
-
-    reveal_opp_pieces()
-    os.system(clear)
-    board_and_console()
-    input("Press 'ENTER' to return to main menu.")
-    return 1
+    set_console("It's your turn!")
+    return 0
 
 
 def handle_game() -> None:
