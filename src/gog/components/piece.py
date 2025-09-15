@@ -35,7 +35,7 @@ class Piece:
         return list(PIECES)[self.rank]
 
     def __str__(self) -> str:
-        return self.symb #if not self.opp else "❔"
+        return self.symb if not self.opp else "❔"
 
 
 class Flag(Piece):
