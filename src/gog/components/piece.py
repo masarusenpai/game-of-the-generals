@@ -35,7 +35,7 @@ class Piece:
         return list(PIECES)[self.rank]
 
     def __str__(self) -> str:
-        return self.symb if not self.opp else "❔"
+        return self.symb #if not self.opp else "❔"
 
 
 class Flag(Piece):
@@ -55,7 +55,7 @@ class Private(Piece):
         super().__init__(1)
 
     def attack(self, target):
-        if isinstance(target, Spy):
+        if isinstance(target, Spy) or isinstance(target, Flag):
             return self
         if self.rank == target.rank:
             return None

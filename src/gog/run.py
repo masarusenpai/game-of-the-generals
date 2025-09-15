@@ -3,7 +3,7 @@ from random import randrange
 from time import sleep
 from gog.components.board import Board
 from gog.components.operation import MOVES
-from gog.components.piece import PIECES, Piece
+from gog.components.piece import PIECES, Piece, Flag
 from gog.config import constants as con
 from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
 
@@ -17,6 +17,7 @@ marker = ""
 in_game = False
 final_state = 0
 board = Board()
+flag_index = -1
 
 
 def set_piece_dict() -> None:
@@ -64,11 +65,6 @@ def set_game_status(status: bool) -> None:
 def set_final_state(code: int) -> None:
     global final_state
     final_state = code
-
-
-def dead_opp(opp: Piece) -> bool:
-    x, y = opp.get_pos()
-    return x < 0 and y < 0
 
 
 def reveal_opp_pieces() -> None:
@@ -199,16 +195,13 @@ def verify_user_action(action: str) -> bool:
 
 
 def set_opponent_pieces(opp=True) -> None:
-    for piece in list(PIECES):
+    if opp:
+        set_piece_dict()
+
+    for piece in list(remaining_pieces):
         y_lower_bound = 5 if opp else 0
         y_upper_bound = 8 if opp else 3
-        n_pieces = 1
-
-        match piece:
-            case "PRIVATE":
-                n_pieces = 6
-            case "SPY":
-                n_pieces = 2
+        n_pieces = remaining_pieces.get(piece)
 
         for _ in range(n_pieces):
             piece_obj = PIECES.get(piece).generate_piece()
@@ -219,6 +212,8 @@ def set_opponent_pieces(opp=True) -> None:
             while board.get_at(x, y) is not None:
                 x, y = randrange(9), randrange(y_lower_bound, y_upper_bound)
             board.place(piece_obj, x, y)
+            if isinstance(piece_obj, Flag):
+                board.set_opp_flag(piece_obj)
 
 
 def place_pieces() -> int:
@@ -252,7 +247,6 @@ def place_pieces() -> int:
                     set_console("Randomising piece positions...")
                     os.system(clear)
                     board_and_console()
-                    clear_game()
                     sleep(1)
                     set_opponent_pieces(opp=False)
                     set_console()
@@ -309,19 +303,38 @@ def place_pieces() -> int:
 
     os.system(clear)
     board_and_console()
-    input("All pieces have been placed! Press 'ENTER' to begin the game.")
+    input(f"All pieces have been placed! Press {BOLD('[ENTER]')} to begin the game.")
     return 0
 
 
 def handle_turn(result: int) -> None:
     set_console_status()
-
-    if result != con.MOVE_MADE:
-        if result == con.USR_END or result == con.OPP_END:
+    match result:
+        case con.USR_END | con.OPP_END:
             set_final_state(result)
             set_console("It's your turn!")
             return 0
+        case con.USR_AUTO_WIN:
+            set_final_state(con.USR_END)
+        case con.OPP_AUTO_WIN:
+            set_final_state(con.OPP_END)
 
+    match final_state:
+        case con.USR_END:
+            set_console_status("VICTORY", "green")
+            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
+        case con.OPP_END:
+            set_console_status("GAME OVER", "red")
+            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
+
+    if final_state: # i.e. if final_state matches any of the above cases
+        reveal_opp_pieces()
+        os.system(clear)
+        board_and_console()
+        input(f"Press {BOLD('[ENTER]')} to return to main menu.")
+        return 1
+
+    if result != con.MOVE_MADE:
         fallen = board.recently_killed()
         rank = fallen.rank
         set_console("CHALLENGE! Examining outcome...")
@@ -330,6 +343,9 @@ def handle_turn(result: int) -> None:
         board_and_console()
         sleep(1)
         board.challenge(restore=True)
+
+        if fallen in opp_pieces:
+            opp_pieces.remove(fallen)
 
         match result:
             case con.OPP_ELIM:
@@ -349,29 +365,15 @@ def handle_turn(result: int) -> None:
             reveal_opp_pieces()
             os.system(clear)
             board_and_console()
-            input("Press 'ENTER' to return to main menu.")
+            input(f"Press {BOLD('[ENTER]')} to return to main menu.")
             return 1
 
         os.system(clear)
         board_and_console()
         sleep(2)
-    
-    match final_state:
-        case con.USR_END:
-            set_console_status("VICTORY", "green")
-            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
-        case con.OPP_END:
-            set_console_status("GAME OVER", "red")
-            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
-        case _:
-            set_console("It's your turn!")
-            return 0
 
-    reveal_opp_pieces()
-    os.system(clear)
-    board_and_console()
-    input("Press 'ENTER' to return to main menu.")
-    return 1
+    set_console("It's your turn!")
+    return 0
 
 
 def handle_game() -> None:
@@ -408,7 +410,6 @@ def handle_game() -> None:
                     board_and_console()
                     sleep(2)
                     break
-
                 set_console("It's your turn!")
                 continue
 
@@ -475,14 +476,31 @@ def handle_game() -> None:
         board_and_console()
         sleep(2)
 
-        # Repeatedly choose random piece until valid movable piece is chosen
-        opp_choice = opp_pieces[randrange(len(opp_pieces))]
-        opp_x, opp_y = opp_choice.get_pos()
-        while (dead_opp(opp_choice)
-                or board.is_surrounded(opp_choice)
-                or not opp_choice.opp):
+        # TODO: make opponent immediately randomly eat adjacent user piece
+        if board.clear_path_to_end():
+            flag_x, flag_y = board.opp_flag.get_pos()
+            res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
+            if handle_turn(res):
+                break
+            continue
+
+        challenger_pieces: list[Piece] = []
+        for candidate in opp_pieces:
+            if board.can_be_challenged(candidate):
+                challenger_pieces.append(candidate)
+
+        opp_x, opp_y = -1, -1
+        if challenger_pieces:
+            random_i = randrange(len(challenger_pieces))
+            opp_choice = challenger_pieces[random_i]
+            opp_x, opp_y = opp_choice.get_pos()
+        else:
+            # Repeatedly choose random piece until valid movable piece is chosen
             opp_choice = opp_pieces[randrange(len(opp_pieces))]
             opp_x, opp_y = opp_choice.get_pos()
+            while board.is_surrounded(opp_choice):
+                opp_choice = opp_pieces[randrange(len(opp_pieces))]
+                opp_x, opp_y = opp_choice.get_pos()
 
         # Repeatedly choose random move until valid move is chosen
         move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
