@@ -3,7 +3,7 @@ from random import randrange
 from time import sleep
 from gog.components.board import Board
 from gog.components.operation import MOVES
-from gog.components.piece import PIECES, Piece
+from gog.components.piece import PIECES, Piece, Flag
 from gog.config import constants as con
 from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
 
@@ -17,6 +17,7 @@ marker = ""
 in_game = False
 final_state = 0
 board = Board()
+flag_index = -1
 
 
 def set_piece_dict() -> None:
@@ -219,6 +220,8 @@ def set_opponent_pieces(opp=True) -> None:
             while board.get_at(x, y) is not None:
                 x, y = randrange(9), randrange(y_lower_bound, y_upper_bound)
             board.place(piece_obj, x, y)
+            if isinstance(piece_obj, Flag):
+                board.set_opp_flag(piece_obj)
 
 
 def place_pieces() -> int:
@@ -355,7 +358,7 @@ def handle_turn(result: int) -> None:
         os.system(clear)
         board_and_console()
         sleep(2)
-    
+
     match final_state:
         case con.USR_END:
             set_console_status("VICTORY", "green")
@@ -474,6 +477,14 @@ def handle_game() -> None:
         os.system(clear)
         board_and_console()
         sleep(2)
+
+        # TODO: move opponent flag forward if there is clear path from flag to end, make opponent
+        # immediately randomly eat adjacent user piece
+        if board.clear_path_to_end():
+            flag_x, flag_y = board.opp_flag.get_pos()
+            res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
+            handle_turn(res)
+            continue
 
         # Repeatedly choose random piece until valid movable piece is chosen
         opp_choice = opp_pieces[randrange(len(opp_pieces))]
