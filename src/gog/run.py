@@ -10,6 +10,7 @@ from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
 
 remaining_pieces: dict[str, int]
 opp_pieces: list[Piece] = []
+graveyard: list[Piece] = []
 
 clear = ""
 console = ""
@@ -38,7 +39,9 @@ def clear_game() -> None:
     global board, final_state
     board = Board()
     opp_pieces.clear()
+    graveyard.clear()
     final_state = 0
+    set_piece_dict()
 
 
 def set_console_status(status="GAME", colour="white") -> None:
@@ -319,22 +322,7 @@ def handle_turn(result: int) -> None:
         case con.OPP_AUTO_WIN:
             set_final_state(con.OPP_END)
 
-    match final_state:
-        case con.USR_END:
-            set_console_status("VICTORY", "green")
-            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
-        case con.OPP_END:
-            set_console_status("GAME OVER", "red")
-            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
-
-    if final_state: # i.e. if final_state matches any of the above cases
-        reveal_opp_pieces()
-        os.system(clear)
-        board_and_console()
-        input(f"Press {BOLD('[ENTER]')} to return to main menu.")
-        return 1
-
-    if result != con.MOVE_MADE:
+    if result != con.MOVE_MADE and result < con.USR_END: # i.e. if a challenge has occurred
         fallen = board.recently_killed()
         rank = fallen.rank
         set_console("CHALLENGE! Examining outcome...")
@@ -342,10 +330,9 @@ def handle_turn(result: int) -> None:
         os.system(clear)
         board_and_console()
         sleep(1)
-        board.challenge(restore=True)
+        board.challenge(restore=True)      
 
-        if fallen in opp_pieces:
-            opp_pieces.remove(fallen)
+        graveyard.append(fallen) # TODO: change this to graveyard (more robust)
 
         match result:
             case con.OPP_ELIM:
@@ -371,6 +358,21 @@ def handle_turn(result: int) -> None:
         os.system(clear)
         board_and_console()
         sleep(2)
+
+    match final_state:
+        case con.USR_END:
+            set_console_status("VICTORY", "green")
+            set_console("Your FLAG 🏳️ successfully reached the end of the board!")
+        case con.OPP_END:
+            set_console_status("GAME OVER", "red")
+            set_console("The opponent's FLAG 🏴 successfully reached the end of the board!")
+
+    if final_state: # i.e. if final_state matches any of the above cases
+        reveal_opp_pieces()
+        os.system(clear)
+        board_and_console()
+        input(f"Press {BOLD('[ENTER]')} to return to main menu.")
+        return 1
 
     set_console("It's your turn!")
     return 0
@@ -476,7 +478,6 @@ def handle_game() -> None:
         board_and_console()
         sleep(2)
 
-        # TODO: make opponent immediately randomly eat adjacent user piece
         if board.clear_path_to_end():
             flag_x, flag_y = board.opp_flag.get_pos()
             res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
@@ -486,11 +487,13 @@ def handle_game() -> None:
 
         challenger_pieces: list[Piece] = []
         for candidate in opp_pieces:
-            if board.can_be_challenged(candidate):
+            if candidate not in graveyard and board.can_be_challenged(candidate):
                 challenger_pieces.append(candidate)
 
         opp_x, opp_y = -1, -1
         if challenger_pieces:
+            print(f"challengers found: {challenger_pieces}")
+            sleep(2)
             random_i = randrange(len(challenger_pieces))
             opp_choice = challenger_pieces[random_i]
             opp_x, opp_y = opp_choice.get_pos()
@@ -498,7 +501,7 @@ def handle_game() -> None:
             # Repeatedly choose random piece until valid movable piece is chosen
             opp_choice = opp_pieces[randrange(len(opp_pieces))]
             opp_x, opp_y = opp_choice.get_pos()
-            while board.is_surrounded(opp_choice):
+            while opp_choice in graveyard or board.is_surrounded(opp_choice):
                 opp_choice = opp_pieces[randrange(len(opp_pieces))]
                 opp_x, opp_y = opp_choice.get_pos()
 
