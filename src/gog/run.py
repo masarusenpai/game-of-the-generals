@@ -330,7 +330,7 @@ def handle_turn(result: int) -> None:
         os.system(clear)
         board_and_console()
         sleep(1)
-        board.challenge(restore=True)      
+        board.challenge(restore=True)
 
         graveyard.append(fallen) # TODO: change this to graveyard (more robust)
 
@@ -485,27 +485,27 @@ def handle_game() -> None:
                 break
             continue
 
-        challenger_pieces: list[Piece] = []
-        for candidate in opp_pieces:
-            if candidate not in graveyard and board.can_be_challenged(candidate):
-                challenger_pieces.append(candidate)
+        challenger_pieces = [
+            challenger for challenger in opp_pieces
+            if challenger not in graveyard and board.can_be_challenged(challenger)
+        ]
 
-        opp_x, opp_y = -1, -1
+        opp_choice: Piece = None
         if challenger_pieces:
             # print(f"challengers found: {challenger_pieces}")
             # sleep(2)
             random_i = randrange(len(challenger_pieces))
             opp_choice = challenger_pieces[random_i]
-            opp_x, opp_y = opp_choice.get_pos()
         else:
-            # Repeatedly choose random piece until valid movable piece is chosen
-            opp_choice = opp_pieces[randrange(len(opp_pieces))]
+            movable_opp_pieces = [
+                opp_p for opp_p in opp_pieces
+                if opp_p not in graveyard and not board.is_surrounded(opp_p)
+            ]
+            opp_choice = movable_opp_pieces[randrange(len(movable_opp_pieces))]
             opp_x, opp_y = opp_choice.get_pos()
-            while opp_choice in graveyard or board.is_surrounded(opp_choice):
-                opp_choice = opp_pieces[randrange(len(opp_pieces))]
-                opp_x, opp_y = opp_choice.get_pos()
 
         # Repeatedly choose random move until valid move is chosen
+        opp_x, opp_y = opp_choice.get_pos()
         move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
         opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
         while opp_status != con.SUCCESS:

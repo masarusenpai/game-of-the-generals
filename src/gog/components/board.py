@@ -138,7 +138,7 @@ class Board:
     def is_surrounded(self, piece: Piece) -> bool:
         """
         Returns whether an opponent piece is surrounded by other opponent pieces (or walls, which
-        have `self.op = True` by default).
+        have `self.opp = True` by default).
         """
         x, y = piece.get_pos()
         adjacent = [
@@ -147,27 +147,24 @@ class Board:
         ]
         return all(adj_piece is not None and adj_piece.opp for adj_piece in adjacent)
 
-    def can_be_challenged(self, piece: Piece) -> list[str]:
+    def can_be_challenged(self, piece: Piece) -> bool:
         """
         Indicates whether a piece can be challenged by an adjacent opposing piece.
         """
         x, y = piece.get_pos()
-        adjacent = {
-            "right": self.get_at(x + 1, y),
-            "left": self.get_at(x - 1, y),
-            "up": self.get_at(x, y + 1),
-            "down": self.get_at(x, y - 1)
-        }
-        killer_moves: list[str] = []
+        adjacent = [
+            self.get_at(x + 1, y),
+            self.get_at(x - 1, y),
+            self.get_at(x, y + 1),
+            self.get_at(x, y - 1)
+        ]
 
-        for adj_piece in list(adjacent):
-            curr_piece = adjacent.get(adj_piece)
-            if (curr_piece is not None
-                    and curr_piece.opp != piece.opp
-                    and curr_piece.rank != con.WALL):
-                killer_moves.append(adj_piece)
-        
-        return killer_moves
+        for adj_piece in adjacent:
+            if (adj_piece is not None
+                    and adj_piece.opp != piece.opp
+                    and adj_piece.rank != con.WALL):
+                return True
+        return False
     
     def set_opp_flag(self, flag: Flag) -> None:
         self.opp_flag = flag
