@@ -3,13 +3,30 @@
 # Game of the Generals
 A singleplayer Python recreation of [Game of the Generals](https://en.wikipedia.org/wiki/Game_of_the_Generals), a Filipino educational war game.
 
-**Note:** For optimal experience, please ensure your terminal properly handles all emojis as 'wide characters' (with width 2)!
-
 ## Quick start
 
 ```bash
 $ bash start.sh
 ```
+
+## Requirements
+### Emoji spacing
+For optimal experience, please ensure your terminal font properly handles all emojis as 'double width' ([East Asian Wide](https://www.unicode.org/reports/tr11/)).
+
+### IMPORTANT: `termcolor`!
+
+This program uses the `termcolor` module to display coloured and formatted text, so please ensure it's installed before running.
+
+```bash
+# MacOS/Windows
+$ python3 -m pip install --upgrade termcolor
+
+# Linux
+$ sudo apt update
+$ sudo apt install termcolor
+```
+
+Alternatively, you may also follow the **source installation** directions on `termcolor`'s [GitHub repository](https://github.com/termcolor/termcolor) (if you're into that).
 
 ## How to play
 
@@ -53,21 +70,6 @@ To win the game, you must either
 - maneuver your flag to the very end of the board. At this point, if there are no adjacent pieces to your flag, you immediately win. Otherwise, all of the adjacent pieces will have to fail to immediately challenge/eliminate your flag in the next turn for you to win.
 
 Feel free to apply your own strategies in playing this game! I can't give any sound advice in this area, sadly. I happen to be better at coding than warfare. 😭
-
-## IMPORTANT: `termcolor`!
-
-This program uses the `termcolor` module to display coloured and formatted text, so please ensure it's installed before running.
-
-```bash
-# MacOS/Windows
-$ python3 -m pip install --upgrade termcolor
-
-# Linux
-$ sudo apt update
-$ sudo apt install termcolor
-```
-
-Alternatively, you may also follow the **source installation** directions on `termcolor`'s [GitHub repository](https://github.com/termcolor/termcolor) (if you're into that).
 
 ---
 
