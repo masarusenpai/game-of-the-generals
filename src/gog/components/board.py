@@ -1,7 +1,7 @@
 """
 Module containing the `Board` class.
 """
-from gog.components.piece import Piece, Flag, challenge_icon, Private
+from gog.components.piece import Piece, Flag, challenge_icon
 from gog.config import constants as con
 
 
@@ -165,10 +165,17 @@ class Board:
                     and adj_piece.rank != con.WALL):
                 return True
         return False
-    
+
     def set_opp_flag(self, flag: Flag) -> None:
+        """
+        Sets `self.flag` to `flag` as an indicator for the opposing flag.
+        """
         self.opp_flag = flag
 
     def clear_path_to_end(self) -> bool:
+        """
+        Indicates whether there is a clear straight path from the opposing flag to the end of the
+        board.
+        """
         x, y = self.opp_flag.get_pos()
         return all(self.get_at(x, all_y) is None for all_y in range(y))

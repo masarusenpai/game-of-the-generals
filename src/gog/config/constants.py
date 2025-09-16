@@ -1,3 +1,6 @@
+"""
+Module containing important constants used in the game.
+"""
 from typing import Callable
 
 
@@ -18,7 +21,6 @@ USR_AUTO_WIN = 6
 OPP_AUTO_WIN = 7
 USR_WINNER = -OPP_ELIM
 OPP_WINNER = -USR_ELIM
-
 
 CHALLENGE = 15
 WALL = 16

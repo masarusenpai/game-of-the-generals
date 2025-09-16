@@ -1,3 +1,6 @@
+"""
+Module responsible for running the game.
+"""
 import os
 from random import randrange
 from time import sleep
@@ -22,6 +25,10 @@ flag_index = -1
 
 
 def set_piece_dict() -> None:
+    """
+    Initialises a global dictionary of pieces mapping from piece name to the amount of pieces which
+    must be placed on the board.
+    """
     global remaining_pieces
     remaining_pieces = {
         "FLAG": 1, "PRIVATE": 6, "SERGEANT": 1, "2ND LIEUTENANT": 1, "1ST LIEUTENANT": 1,
@@ -45,13 +52,18 @@ def clear_game() -> None:
 
 
 def set_console_status(status="GAME", colour="white") -> None:
+    """
+    Sets status (marker) of the console to `status` with colour `colour`. By default, console status
+    is set to '`[GAME]`' (in white).
+    """
     global marker
     marker = marker_formatting(status, colour)
 
 
 def set_console(message="") -> None:
     """
-    Display `message` to game console. By default, console message is set to blank.
+    Display `message` to game console along with the status. By default, console message is set to
+    blank.
     """
     global console
     if message:
@@ -61,21 +73,34 @@ def set_console(message="") -> None:
 
 
 def set_game_status(status: bool) -> None:
+    """
+    Set `status` of game which indicates whether user is in a game or not.
+    """
     global in_game
     in_game = status
 
 
 def set_final_state(code: int) -> None:
+    """
+    Set the state of the game with `code`, indicating whether an endgame has been reached (a flag
+    has reached the end of the board).
+    """
     global final_state
     final_state = code
 
 
 def reveal_opp_pieces() -> None:
+    """
+    Reveal all oponent pieces at the end of a game with `Piece.reveal()`.
+    """
     for piece in opp_pieces:
         piece.reveal()
 
 
 def board_and_console() -> None:
+    """
+    Print to `stdout` the console and the board with a formatted banner displaying the game title.
+    """
     print()
     print(console)
     print()
@@ -86,12 +111,15 @@ def board_and_console() -> None:
 
 
 def display_rules() -> None:
+    """
+    Print the rules of the game to `stdout`. Content is copied and pasted from README.md.
+    """
     os.system(clear)
     print("\n\n")
     print((" " * 14) + to_banner("RULES"))
     print()
 
-    with open("../resources/rules.txt", "r") as fd:
+    with open("../resources/rules.txt", "r", encoding="utf-8") as fd:
         for line in fd.readlines():
             print(line, end="")
 
@@ -103,6 +131,9 @@ def display_rules() -> None:
 
 
 def display_legend() -> None:
+    """
+    Print to `stdout` the legend of emojis representing pieces.
+    """
     os.system(clear)
     print("\n\n")
     print((" " * 14) + to_banner("LEGEND"))
@@ -120,6 +151,9 @@ def display_legend() -> None:
 
 
 def print_commands() -> None:
+    """
+    Print main menu commands to `stdout`.
+    """
     print("COMMAND                               FUNCTION")
     print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(PLAY/P)                            Start game")
@@ -130,6 +164,9 @@ def print_commands() -> None:
 
 
 def print_pre_game_commands() -> None:
+    """
+    Print pre-game commands to `stdout` (while user is placing pieces).
+    """
     print("OTHER SUPPORTED COMMANDS")
     print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(PIECE/P)                  View unadded pieces")
@@ -140,6 +177,9 @@ def print_pre_game_commands() -> None:
 
 
 def print_in_game_commands() -> None:
+    """
+    Print support in-game commands to `stdout`.
+    """
     print("OTHER SUPPORTED COMMANDS")
     print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(WHICH <POS>)      View name of piece at <POS>")
@@ -149,6 +189,9 @@ def print_in_game_commands() -> None:
 
 
 def empty_box() -> bool:
+    """
+    Return whether there are leftover pieces to be placed or not.
+    """
     for no in list(remaining_pieces.values()):
         if no:
             return False
@@ -156,6 +199,10 @@ def empty_box() -> bool:
 
 
 def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
+    """
+    Parses `raw_input` for valid coordinates. Returns tuple of 0-indexed coordinates if successful
+    and tuple of `None` values if not.
+    """
     inp = raw_inp.lower()
     if len(inp) != 2:
         return None, None
@@ -170,6 +217,9 @@ def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
 
 
 def show_piece_box() -> None:
+    """
+    Display all remaining unplaced pieces and their quantities to `stdout`.
+    """
     os.system(clear)
     print("\n\n")
     print((" " * 9) + to_banner("REMAINING PIECES"))
@@ -189,6 +239,9 @@ def show_piece_box() -> None:
 
 
 def verify_user_action(action: str) -> bool:
+    """
+    Verify the `action` of a user. Returns `True` if user inputs 'yes' (case insensitive).
+    """
     set_console()
     os.system(clear)
     board_and_console()
@@ -197,7 +250,11 @@ def verify_user_action(action: str) -> bool:
     return input(BLINK("> ")).lower() == "yes"
 
 
-def set_opponent_pieces(opp=True) -> None:
+def randomise_piece_placement(opp=True) -> None:
+    """
+    Sets all remaining pieces at random. If `opp` is set to `False`, piece placement is randomised
+    in the user's side of the board.
+    """
     if opp:
         set_piece_dict()
 
@@ -220,8 +277,10 @@ def set_opponent_pieces(opp=True) -> None:
 
 
 def place_pieces() -> int:
+    """
+    Handles manual piece placement.
+    """
     set_piece_dict()
-
     while not empty_box():
         os.system(clear)
         board_and_console()
@@ -251,7 +310,7 @@ def place_pieces() -> int:
                     os.system(clear)
                     board_and_console()
                     sleep(1)
-                    set_opponent_pieces(opp=False)
+                    randomise_piece_placement(opp=False)
                     set_console()
                     break
                 continue
@@ -311,6 +370,9 @@ def place_pieces() -> int:
 
 
 def handle_turn(result: int) -> None:
+    """
+    Handles console messages / game status based on `result` code.
+    """
     set_console_status()
     match result:
         case con.USR_END | con.OPP_END:
@@ -332,7 +394,7 @@ def handle_turn(result: int) -> None:
         sleep(1)
         board.challenge(restore=True)
 
-        graveyard.append(fallen) # TODO: change this to graveyard (more robust)
+        graveyard.append(fallen)
 
         match result:
             case con.OPP_ELIM:
@@ -379,6 +441,9 @@ def handle_turn(result: int) -> None:
 
 
 def handle_game() -> None:
+    """
+    Handles the actual game mechanics between user and simulation (using `random.randrange`).
+    """
     if place_pieces():
         set_game_status(False)
         return
@@ -389,7 +454,7 @@ def handle_game() -> None:
     board_and_console()
     sleep(1)
 
-    set_opponent_pieces()
+    randomise_piece_placement()
     set_console("It's your turn!")
 
     while True:
@@ -492,11 +557,12 @@ def handle_game() -> None:
 
         opp_choice: Piece = None
         if challenger_pieces:
-            # print(f"challengers found: {challenger_pieces}")
-            # sleep(2)
+            # If at least one opponent piece has an adjacent challenegable piece, randomly choose
+            # from those pieces to move
             random_i = randrange(len(challenger_pieces))
             opp_choice = challenger_pieces[random_i]
         else:
+            # Otherwise, select a piece from a list of moveable, active opponent pieces
             movable_opp_pieces = [
                 opp_p for opp_p in opp_pieces
                 if opp_p not in graveyard and not board.is_surrounded(opp_p)
@@ -521,11 +587,14 @@ def handle_game() -> None:
 
 
 def start() -> None:
+    """
+    Starts the actual game. Called in the entry point of the code.
+    """
     while True:
         os.system(clear)
         board_and_console()
         print_commands()
-        print(f"Please input a command.")
+        print("Please input a command.")
         cmd = input(BLINK("> "))
         set_console_status()
         set_console()
@@ -550,6 +619,7 @@ def start() -> None:
 
 
 if __name__ == "__main__":
+    # Configure 'clear screen' command based on the OS of the user.
     if os.name == "posix":
         clear = "clear"
     else:
