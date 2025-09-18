@@ -21,7 +21,6 @@ marker = ""
 in_game = False
 final_state = 0
 board = Board()
-flag_index = -1
 
 
 def set_piece_dict() -> None:
