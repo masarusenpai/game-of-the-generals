@@ -13,7 +13,6 @@ from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
 
 remaining_pieces: dict[str, int]
 opp_pieces: list[Piece] = []
-graveyard: list[Piece] = []
 
 clear = ""
 console = ""
@@ -45,7 +44,6 @@ def clear_game() -> None:
     global board, final_state
     board = Board()
     opp_pieces.clear()
-    graveyard.clear()
     final_state = 0
     set_piece_dict()
 
@@ -210,6 +208,10 @@ def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
     if y < 1 or y > 8:
         return None, None
     return x, y - 1
+
+
+def indices_to_coords(x: int, y: int) -> str:
+    return f"{chr(x + con.CHR_OFFSET)}{y + 1}"
 
 
 def show_piece_box() -> None:
@@ -381,22 +383,20 @@ def handle_turn(result: int) -> None:
             set_final_state(con.OPP_END)
 
     if result != con.MOVE_MADE and result < con.USR_END: # i.e. if a challenge has occurred
-        fallen = board.recently_killed()
-        rank = fallen.rank
-        graveyard.append(fallen)
+        fallen = board.get_last_killed()
 
         set_console("CHALLENGE! Examining outcome...")
         board.challenge()
         os.system(clear)
         board_and_console()
-        sleep(1)
+        sleep(2)
         board.challenge(restore=True)
 
         match result:
             case con.OPP_ELIM:
-                set_console(f"You ate the opponent's {fallen.name()} {con.SYMBOLS[rank]}!")
+                set_console(f"You ate the opponent's {fallen.name()} {fallen.symb}!")
             case con.USR_ELIM:
-                set_console(f"The opponent ate your {fallen.name()} {con.SYMBOLS[rank]}!")
+                set_console(f"The opponent ate your {fallen.name()} {fallen.symb}!")
             case con.SPLIT:
                 set_console("Split! Both your pieces have been eliminated (same rank).")
             case con.USR_WINNER:
@@ -445,12 +445,13 @@ def handle_game() -> None:
         return
 
     os.system(clear)
-    set_console_status()
-    set_console("Your opponent (simulation) is placing its pieces...")
+    set_console_status("OPP")
+    set_console("Arranging pieces...")
     board_and_console()
     sleep(1)
 
     randomise_piece_placement()
+    set_console_status()
     set_console("It's your turn!")
 
     while True:
@@ -533,46 +534,60 @@ def handle_game() -> None:
         if handle_turn(result):
             break
 
-        set_console_status()
-        set_console("It's the opponent's turn. Calculating move...")
+        set_console_status("OPP")
+        set_console("Calculating move...")
         os.system(clear)
         board_and_console()
         sleep(2)
 
         if board.clear_path_to_end():
-            flag_x, flag_y = board.opp_flag.get_pos()
+            flag_x, flag_y = board.get_opp_flag().get_pos()
             res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
             if handle_turn(res):
                 break
             continue
 
-        challenger_pieces = [
-            challenger for challenger in opp_pieces
-            if challenger not in graveyard and board.can_be_challenged(challenger)
-        ]
-
-        opp_choice: Piece = None
-        if challenger_pieces:
-            # If at least one opponent piece has an adjacent challenegable piece, randomly choose
-            # from those pieces to move
-            random_i = randrange(len(challenger_pieces))
-            opp_choice = challenger_pieces[random_i]
-        else:
-            # Otherwise, select a piece from a list of moveable, active opponent pieces
-            movable_opp_pieces = [
-                opp_p for opp_p in opp_pieces
-                if opp_p not in graveyard and not board.is_surrounded(opp_p)
+        opp_res = -1
+        while True:
+            challenger_pieces = [
+                challenger for challenger in opp_pieces
+                if challenger.active and board.can_be_challenged(challenger)
             ]
-            opp_choice = movable_opp_pieces[randrange(len(movable_opp_pieces))]
-            opp_x, opp_y = opp_choice.get_pos()
 
-        # Repeatedly choose random move until valid move is chosen
-        opp_x, opp_y = opp_choice.get_pos()
-        move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
-        opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
-        while opp_status != con.SUCCESS:
-            move_obj = MOVES.get(list(MOVES)[randrange(4)]).generate_move()
-            opp_status, opp_res = move_obj.execute(board, opp_x, opp_y)
+            opp_choice: Piece = None
+            if challenger_pieces:
+                # If at least one opponent piece has an adjacent challengeable piece, randomly choose
+                # from those pieces to move
+                opp_choice = challenger_pieces[randrange(len(challenger_pieces))]
+            else:
+                # Otherwise, select a piece from a list of moveable, active opponent pieces
+                movable_opp_pieces = [
+                    opp_p for opp_p in opp_pieces
+                    if opp_p.active and not board.is_surrounded(opp_p)
+                ]
+                opp_choice = movable_opp_pieces[randrange(len(movable_opp_pieces))]
+
+            opp_x, opp_y = opp_choice.get_pos()
+            valid_moves = board.get_valid_moves(opp_choice)
+            if "down" in valid_moves:
+                valid_moves.append("down")
+            chosen_move = valid_moves[randrange(len(valid_moves))]
+
+            set_console(f"Proposed move: {indices_to_coords(opp_x, opp_y)} {chosen_move.upper()}")
+            os.system(clear)
+            board_and_console()
+            sleep(2)
+
+            # TODO: check if infinite loop can happen here
+            move_obj = MOVES.get(chosen_move).generate_move()
+            opp_move_status, opp_res = move_obj.execute(board, opp_x, opp_y)
+            if opp_move_status == con.SUCCESS:
+                break
+
+            set_console("Invalid move. Recalculating...")
+            os.system(clear)
+            board_and_console()
+            sleep(2)
 
         if handle_turn(opp_res):
             break

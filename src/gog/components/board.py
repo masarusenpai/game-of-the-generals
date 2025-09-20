@@ -11,10 +11,10 @@ class Board:
     """
     def __init__(self) -> None:
         self.list_repr: list[list[Piece | None]] = []
-        self.graveyard: list[Piece] = []
         self.cache: list[tuple[int, int]] = []
-        self.challenge_restore: list[Piece] = []
+        self.challenge_cache: Piece = None
         self.opp_flag: Flag = None
+        self.last_killed: Piece = None
 
         for y in range(con.BOARD_LEN):
             self.list_repr.append([])
@@ -67,15 +67,15 @@ class Board:
             src = piece.attack(dest)
             if src == piece:
                 code = con.OPP_ELIM if not piece.opp else con.USR_ELIM
-                self.graveyard.append(dest)
+                self.last_killed = dest
             elif src is None:
                 code = con.SPLIT
-                self.graveyard.append(piece if piece.opp else dest)
+                self.last_killed = piece if piece.opp else dest
             else:
                 code = con.USR_ELIM if not piece.opp else con.OPP_ELIM
-                self.graveyard.append(piece)
+                self.last_killed = piece
 
-            if isinstance(self.graveyard[-1], Flag):
+            if isinstance(self.last_killed, Flag):
                 code *= -1
 
         self.list_repr[y][x] = src
@@ -96,14 +96,15 @@ class Board:
         """
         self.list_repr[y][x] = None
 
-    def recently_killed(self) -> Piece | None:
+    def get_last_killed(self) -> Piece | None:
         """
         Returns the most recently killed `Piece` object. Technically returns `None` if no pieces
         have been killed yet, but this should not happen in-game.
         """
-        if not self.graveyard:
-            return None # This should never happen!
-        return self.graveyard[-1]
+        return self.last_killed
+
+    def get_opp_flag(self) -> Flag:
+        return self.opp_flag
 
     def undo_place(self) -> Piece | None:
         """
@@ -127,44 +128,50 @@ class Board:
         if restore:
             x, y = self.cache[-1]
             self.clear(x, y)
-            if self.challenge_restore:
-                self.place(self.challenge_restore.pop(), x, y)
+            if self.challenge_cache is not None:
+                self.place(self.challenge_cache, x, y)
+                self.challenge_cache = None
         else:
             loc = self.get_at(x, y)
             if loc is not None:
-                self.challenge_restore.append(loc)
+                self.clear(x, y)
+                self.challenge_cache = loc
             self.place(challenge_icon(), x, y)
+
+    def __get_adjacent(self, piece: Piece) -> dict[str, Piece | None]:
+        x, y = piece.get_pos()
+        return {
+            "right": self.get_at(x + 1, y),
+            "left": self.get_at(x - 1, y),
+            "up": self.get_at(x, y + 1),
+            "down": self.get_at(x, y - 1)
+        }
 
     def is_surrounded(self, piece: Piece) -> bool:
         """
         Returns whether an opponent piece is surrounded by other opponent pieces (or walls, which
         have `self.opp = True` by default).
         """
-        x, y = piece.get_pos()
-        adjacent = [
-            self.get_at(x + 1, y), self.get_at(x - 1, y),
-            self.get_at(x, y + 1), self.get_at(x, y - 1)
-        ]
+        adjacent = list(self.__get_adjacent(piece).values())
         return all(adj_piece is not None and adj_piece.opp for adj_piece in adjacent)
 
     def can_be_challenged(self, piece: Piece) -> bool:
         """
         Indicates whether a piece can be challenged by an adjacent opposing piece.
         """
-        x, y = piece.get_pos()
-        adjacent = [
-            self.get_at(x + 1, y),
-            self.get_at(x - 1, y),
-            self.get_at(x, y + 1),
-            self.get_at(x, y - 1)
-        ]
+        adjacent = list(self.__get_adjacent(piece).values())
+        return not all(
+            adj_piece is None or adj_piece.opp == piece.opp or adj_piece.rank == con.WALL
+            for adj_piece in adjacent
+        )
 
-        for adj_piece in adjacent:
-            if (adj_piece is not None
-                    and adj_piece.opp != piece.opp
-                    and adj_piece.rank != con.WALL):
-                return True
-        return False
+    def get_valid_moves(self, piece: Piece) -> list[str]:
+        adjacent = self.__get_adjacent(piece)
+        return [
+            move for move in list(adjacent)
+            if adjacent.get(move) is None 
+                or (not adjacent.get(move).opp and adjacent.get(move).rank != con.WALL)
+        ]
 
     def set_opp_flag(self, flag: Flag) -> None:
         """
