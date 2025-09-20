@@ -191,10 +191,7 @@ def empty_box() -> bool:
     """
     Return whether there are leftover pieces to be placed or not.
     """
-    for no in list(remaining_pieces.values()):
-        if no:
-            return False
-    return True
+    return all(n_pieces == 0 for n_pieces in list(remaining_pieces.values()))
 
 
 def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
@@ -386,14 +383,14 @@ def handle_turn(result: int) -> None:
     if result != con.MOVE_MADE and result < con.USR_END: # i.e. if a challenge has occurred
         fallen = board.recently_killed()
         rank = fallen.rank
+        graveyard.append(fallen)
+
         set_console("CHALLENGE! Examining outcome...")
         board.challenge()
         os.system(clear)
         board_and_console()
         sleep(1)
         board.challenge(restore=True)
-
-        graveyard.append(fallen)
 
         match result:
             case con.OPP_ELIM:
