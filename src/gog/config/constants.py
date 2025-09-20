@@ -5,6 +5,7 @@ from typing import Callable
 
 
 ORD_OFFSET = 97
+CHR_OFFSET = 65
 
 SUCCESS = 0
 EMPTY_CELL = 1

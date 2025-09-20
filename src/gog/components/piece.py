@@ -14,23 +14,24 @@ class Piece:
     """
     def __init__(self, rank: int) -> None:
         self.rank = rank
-        self._x_pos = -1
-        self._y_pos = -1
+        self.__x_pos = -1
+        self.__y_pos = -1
         self.symb = con.SYMBOLS[self.rank]
         self.opp = False
+        self.active = True
 
     def get_pos(self) -> tuple[int, int]:
         """
         Returns the position of the piece as a tuple.
         """
-        return self._x_pos, self._y_pos
+        return self.__x_pos, self.__y_pos
 
     def set_pos(self, x: int, y: int) -> None:
         """
         Sets the position of the piece as (`x`, `y`).
         """
-        self._x_pos = x
-        self._y_pos = y
+        self.__x_pos = x
+        self.__y_pos = y
 
     def set_opp(self) -> None:
         """
@@ -48,10 +49,14 @@ class Piece:
         """
         Handles the attacking logic when the piece challenges `target`.
         """
-        if self.rank == target.rank:
-            return None
         if self.rank > target.rank:
+            target.active = False
             return self
+
+        self.active = False
+        if self.rank == target.rank:
+            target.active = False
+            return None
         return target
 
     def name(self) -> str:
@@ -77,7 +82,12 @@ class Flag(Piece):
         self.symb = "🏴"
 
     def attack(self, target):
-        return self if self.rank == target.rank else target
+        if self.rank == target.rank:
+            target.active = False
+            return self
+
+        self.active = False
+        return target
 
 
 class Private(Piece):
@@ -89,8 +99,12 @@ class Private(Piece):
 
     def attack(self, target):
         if isinstance(target, (Flag, Spy)):
+            target.active = False
             return self
+
+        self.active = False
         if self.rank == target.rank:
+            target.active = False
             return None
         return target
 
@@ -200,8 +214,12 @@ class Spy(Piece):
 
     def attack(self, target):
         if isinstance(target, Private):
+            self.active = False
             return target
+
+        target.active = False
         if self.rank == target.rank:
+            self.active = False
             return None
         return self
 
