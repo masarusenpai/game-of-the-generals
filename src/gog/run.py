@@ -211,6 +211,10 @@ def parse_coords(raw_inp: str) -> tuple[int, int] | tuple[None, None]:
 
 
 def indices_to_coords(x: int, y: int) -> str:
+    """
+    Convert zero-based indices `x` and `y` for accessing the list representation of the board into
+    valid, command-formatted coordinates.
+    """
     return f"{chr(x + con.CHR_OFFSET)}{y + 1}"
 
 
@@ -556,8 +560,8 @@ def handle_game() -> None:
 
             opp_choice: Piece = None
             if challenger_pieces:
-                # If at least one opponent piece has an adjacent challengeable piece, randomly choose
-                # from those pieces to move
+                # If at least one opponent piece has an adjacent challengeable piece, randomly
+                # choose from those pieces to move
                 opp_choice = challenger_pieces[randrange(len(challenger_pieces))]
             else:
                 # Otherwise, select a piece from a list of moveable, active opponent pieces
@@ -578,7 +582,6 @@ def handle_game() -> None:
             board_and_console()
             sleep(2)
 
-            # TODO: check if infinite loop can happen here
             move_obj = MOVES.get(chosen_move).generate_move()
             opp_move_status, opp_res = move_obj.execute(board, opp_x, opp_y)
             if opp_move_status == con.SUCCESS:

@@ -11,10 +11,10 @@ class Board:
     """
     def __init__(self) -> None:
         self.list_repr: list[list[Piece | None]] = []
-        self.cache: list[tuple[int, int]] = []
-        self.challenge_cache: Piece = None
-        self.opp_flag: Flag = None
-        self.last_killed: Piece = None
+        self.__cache: list[tuple[int, int]] = []
+        self.__challenge_cache: Piece = None
+        self.__opp_flag: Flag = None
+        self.__last_killed: Piece = None
 
         for y in range(con.BOARD_LEN):
             self.list_repr.append([])
@@ -67,19 +67,19 @@ class Board:
             src = piece.attack(dest)
             if src == piece:
                 code = con.OPP_ELIM if not piece.opp else con.USR_ELIM
-                self.last_killed = dest
+                self.__last_killed = dest
             elif src is None:
                 code = con.SPLIT
-                self.last_killed = piece if piece.opp else dest
+                self.__last_killed = piece if piece.opp else dest
             else:
                 code = con.USR_ELIM if not piece.opp else con.OPP_ELIM
-                self.last_killed = piece
+                self.__last_killed = piece
 
-            if isinstance(self.last_killed, Flag):
+            if isinstance(self.__last_killed, Flag):
                 code *= -1
 
         self.list_repr[y][x] = src
-        self.cache.append((x, y))
+        self.__cache.append((x, y))
         piece.set_pos(x, y)
 
         if code == con.MOVE_MADE and isinstance(piece, Flag):
@@ -101,19 +101,22 @@ class Board:
         Returns the most recently killed `Piece` object. Technically returns `None` if no pieces
         have been killed yet, but this should not happen in-game.
         """
-        return self.last_killed
+        return self.__last_killed
 
     def get_opp_flag(self) -> Flag:
-        return self.opp_flag
+        """
+        Returns the `Flag` object representing the opposing flag.
+        """
+        return self.__opp_flag
 
     def undo_place(self) -> Piece | None:
         """
         Remove the last `Piece` object placed on the board and return it. If there's nothing to
         undo, return `None`.
         """
-        if not self.cache:
+        if not self.__cache:
             return None
-        x, y = self.cache.pop()
+        x, y = self.__cache.pop()
         piece = self.get_at(x, y)
         self.clear(x, y)
         return piece
@@ -124,18 +127,18 @@ class Board:
         'challenge' animation sequence, when `restore` is set to `True`, return the original piece
         to its original position.
         """
-        x, y = self.cache[-1]
+        x, y = self.__cache[-1]
         if restore:
-            x, y = self.cache[-1]
+            x, y = self.__cache[-1]
             self.clear(x, y)
-            if self.challenge_cache is not None:
-                self.place(self.challenge_cache, x, y)
-                self.challenge_cache = None
+            if self.__challenge_cache is not None:
+                self.place(self.__challenge_cache, x, y)
+                self.__challenge_cache = None
         else:
             loc = self.get_at(x, y)
             if loc is not None:
                 self.clear(x, y)
-                self.challenge_cache = loc
+                self.__challenge_cache = loc
             self.place(challenge_icon(), x, y)
 
     def __get_adjacent(self, piece: Piece) -> dict[str, Piece | None]:
@@ -166,10 +169,16 @@ class Board:
         )
 
     def get_valid_moves(self, piece: Piece) -> list[str]:
+        """
+        Returns a list of valid moves `piece` may make.
+
+        May not work as intended, so this must be used in conjunction with the error handling
+        present in `run.py`.
+        """
         adjacent = self.__get_adjacent(piece)
         return [
             move for move in list(adjacent)
-            if adjacent.get(move) is None 
+            if adjacent.get(move) is None
                 or (not adjacent.get(move).opp and adjacent.get(move).rank != con.WALL)
         ]
 
@@ -177,12 +186,12 @@ class Board:
         """
         Sets `self.flag` to `flag` as an indicator for the opposing flag.
         """
-        self.opp_flag = flag
+        self.__opp_flag = flag
 
     def clear_path_to_end(self) -> bool:
         """
         Indicates whether there is a clear straight path from the opposing flag to the end of the
         board.
         """
-        x, y = self.opp_flag.get_pos()
+        x, y = self.__opp_flag.get_pos()
         return all(self.get_at(x, all_y) is None for all_y in range(y))
