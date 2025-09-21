@@ -323,19 +323,18 @@ def place_pieces() -> int:
                     os.system(clear)
                     board_and_console()
                     clear_game()
-                    opp_pieces.clear()
                     set_console()
                     sleep(1)
-                    return -1
+                    return 1
                 continue
 
-        cmds = cmd.split()
-        if len(cmds) < 2:
+        cmd_tokens = cmd.split()
+        if len(cmd_tokens) < 2:
             set_console_status("ERROR", "red")
-            set_console("Invalid command.")
+            set_console(f"Invalid command '{cmd}'.")
             continue
 
-        piece_input = " ".join(cmds[:-1])
+        piece_input = " ".join(cmd_tokens[:-1])
         piece_name = con.KEYWORD_MAPPER.get(piece_input.upper())
         if piece_name is None:
             set_console_status("ERROR", "red")
@@ -346,7 +345,7 @@ def place_pieces() -> int:
             set_console(f"All pieces of {piece_name} have already been placed.")
             continue
 
-        pos_input = cmds[-1]
+        pos_input = cmd_tokens[-1]
         x, y = parse_coords(pos_input)
         if (x is None and y is None) or y > 2:
             set_console_status("ERROR", "red")
@@ -481,46 +480,48 @@ def handle_game() -> None:
                 set_console("It's your turn!")
                 continue
 
-        cmds = cmd.split()
-        if len(cmds) != 2:
+        cmd_tokens = cmd.split()
+        if len(cmd_tokens) != 2:
             set_console_status("ERROR", "red")
-            set_console(f"Error: invalid command '{cmd}'.")
+            set_console(f"Invalid command '{cmd}'.")
             continue
 
-        if cmds[0].lower() == 'which':
-            x, y = parse_coords(cmds[1])
+        if cmd_tokens[0].lower() == 'which':
+            x, y = parse_coords(cmd_tokens[1])
             if x is None and y is None:
                 set_console_status("ERROR", "red")
-                set_console(f"Error: invalid position '{cmds[1]}'.")
+                set_console(f"Invalid position '{cmd_tokens[1]}'.")
                 continue
 
             selected_piece = board.get_at(x, y)
             if selected_piece is None:
                 set_console_status("ERROR", "red")
-                set_console("Error: blank position selected.")
+                set_console("Blank position selected.")
                 continue
 
             set_console_status()
             if selected_piece.opp:
-                set_console(f"Piece at {cmds[1].upper()}: UNKNOWN (enemy piece selected)")
+                set_console(f"Piece at {cmd_tokens[1].upper()}: UNKNOWN ❔ (enemy piece selected)")
             else:
-                set_console(f"Piece at {cmds[1].upper()}: {selected_piece.name()} {selected_piece}")
+                set_console(
+                    f"Piece at {cmd_tokens[1].upper()}: {selected_piece.name()} {selected_piece}"
+                )
             continue
 
-        x, y = parse_coords(cmds[0])
+        x, y = parse_coords(cmd_tokens[0])
         if x is None and y is None:
             set_console_status("ERROR", "red")
-            set_console(f"Error: invalid position '{cmds[0]}'.")
+            set_console(f"Invalid position '{cmd_tokens[0]}'.")
             continue
-        operation = MOVES.get(cmds[1].lower())
+        operation = MOVES.get(cmd_tokens[1].lower())
         if operation is None:
             set_console_status("ERROR", "red")
-            set_console(f"Error: invalid operation '{cmds[1]}'.")
+            set_console(f"Invalid operation '{cmd_tokens[1]}'.")
             continue
 
         if board.get_at(x, y) is not None and board.get_at(x, y).opp:
             set_console_status("ERROR", "red")
-            set_console("Error: enemy piece selected.")
+            set_console("Enemy piece selected.")
             continue
 
         status, result = operation.generate_move().execute(board, x, y)
@@ -528,11 +529,11 @@ def handle_game() -> None:
             set_console_status("ERROR", "red")
             match status:
                 case con.EMPTY_CELL:
-                    set_console("Error: empty cell selected.")
+                    set_console("Empty cell selected.")
                 case con.OUT_OF_BOUNDS:
-                    set_console("Error: out-of-bounds move.")
+                    set_console("Out-of-bounds move.")
                 case con.FRIENDLY_FIRE:
-                    set_console("Error: move blocked by a friendly piece.")
+                    set_console("Move blocked by a friendly piece.")
             continue
 
         if handle_turn(result):
@@ -618,7 +619,7 @@ def start() -> None:
                 break
             case _:
                 set_console_status("ERROR", "red")
-                set_console(f"'{cmd}': invalid command.")
+                set_console(f"Unknown command '{cmd}'.")
 
 
 if __name__ == "__main__":
