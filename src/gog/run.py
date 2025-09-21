@@ -546,52 +546,41 @@ def handle_game() -> None:
 
         if board.clear_path_to_end():
             flag_x, flag_y = board.get_opp_flag().get_pos()
-            res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
-            if handle_turn(res):
+            flag_res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
+            if handle_turn(flag_res):
                 break
             continue
 
-        opp_res = -1
-        while True:
-            challenger_pieces = [
-                challenger for challenger in opp_pieces
-                if challenger.active and board.can_be_challenged(challenger)
+        challenger_pieces = [
+            challenger for challenger in opp_pieces
+            if challenger.active and board.can_be_challenged(challenger)
+        ]
+
+        opp_choice: Piece = None
+        if challenger_pieces:
+            # If at least one opponent piece has an adjacent challengeable piece, randomly
+            # choose from those pieces to move
+            opp_choice = challenger_pieces[randrange(len(challenger_pieces))]
+        else:
+            # Otherwise, select a piece from a list of moveable, active opponent pieces
+            movable_opp_pieces = [
+                opp_p for opp_p in opp_pieces
+                if opp_p.active and not board.is_surrounded(opp_p)
             ]
+            opp_choice = movable_opp_pieces[randrange(len(movable_opp_pieces))]
 
-            opp_choice: Piece = None
-            if challenger_pieces:
-                # If at least one opponent piece has an adjacent challengeable piece, randomly
-                # choose from those pieces to move
-                opp_choice = challenger_pieces[randrange(len(challenger_pieces))]
-            else:
-                # Otherwise, select a piece from a list of moveable, active opponent pieces
-                movable_opp_pieces = [
-                    opp_p for opp_p in opp_pieces
-                    if opp_p.active and not board.is_surrounded(opp_p)
-                ]
-                opp_choice = movable_opp_pieces[randrange(len(movable_opp_pieces))]
+        opp_x, opp_y = opp_choice.get_pos()
+        valid_moves = board.get_valid_moves(opp_choice)
+        if "down" in valid_moves:
+            valid_moves.append("down")
+        chosen_move = valid_moves[randrange(len(valid_moves))]
 
-            opp_x, opp_y = opp_choice.get_pos()
-            valid_moves = board.get_valid_moves(opp_choice)
-            if "down" in valid_moves:
-                valid_moves.append("down")
-            chosen_move = valid_moves[randrange(len(valid_moves))]
+        set_console(f"{indices_to_coords(opp_x, opp_y)} {chosen_move.upper()}")
+        os.system(clear)
+        board_and_console()
+        sleep(2)
 
-            set_console(f"Proposed move: {indices_to_coords(opp_x, opp_y)} {chosen_move.upper()}")
-            os.system(clear)
-            board_and_console()
-            sleep(2)
-
-            move_obj = MOVES.get(chosen_move).generate_move()
-            opp_move_status, opp_res = move_obj.execute(board, opp_x, opp_y)
-            if opp_move_status == con.SUCCESS:
-                break
-
-            set_console("Invalid move. Recalculating...")
-            os.system(clear)
-            board_and_console()
-            sleep(2)
-
+        opp_res = MOVES.get(chosen_move).generate_move().execute(board, opp_x, opp_y)[1]
         if handle_turn(opp_res):
             break
 

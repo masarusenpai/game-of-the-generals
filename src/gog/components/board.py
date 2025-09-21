@@ -12,7 +12,7 @@ class Board:
     def __init__(self) -> None:
         self.list_repr: list[list[Piece | None]] = []
         self.__cache: list[tuple[int, int]] = []
-        self.__challenge_cache: Piece = None
+        self.__challenge_cache: Piece | None = None
         self.__opp_flag: Flag = None
         self.__last_killed: Piece = None
 
@@ -48,11 +48,13 @@ class Board:
         Get the `Piece` object on the board at position (`x`, `y`). Returns `None` if position is
         empty or a 'wall' if position is out-of-bounds.
         """
+        wall = Piece(con.WALL)
+        wall.set_opp()
+        if x < 0 or y < 0:
+            return wall
         try:
             return self.list_repr[y][x]
         except IndexError:
-            wall = Piece(con.WALL)
-            wall.set_opp()
             return wall
 
     def place(self, piece: Piece, x: int, y: int) -> int:
@@ -130,16 +132,13 @@ class Board:
         x, y = self.__cache[-1]
         if restore:
             x, y = self.__cache[-1]
-            self.clear(x, y)
+            self.list_repr[y][x] = self.__challenge_cache
             if self.__challenge_cache is not None:
-                self.place(self.__challenge_cache, x, y)
                 self.__challenge_cache = None
         else:
             loc = self.get_at(x, y)
-            if loc is not None:
-                self.clear(x, y)
-                self.__challenge_cache = loc
-            self.place(challenge_icon(), x, y)
+            self.__challenge_cache = loc
+            self.list_repr[y][x] = challenge_icon()
 
     def __get_adjacent(self, piece: Piece) -> dict[str, Piece | None]:
         x, y = piece.get_pos()
@@ -178,8 +177,7 @@ class Board:
         adjacent = self.__get_adjacent(piece)
         return [
             move for move in list(adjacent)
-            if adjacent.get(move) is None
-                or (not adjacent.get(move).opp and adjacent.get(move).rank != con.WALL)
+            if adjacent.get(move) is None or not adjacent.get(move).opp
         ]
 
     def set_opp_flag(self, flag: Flag) -> None:
