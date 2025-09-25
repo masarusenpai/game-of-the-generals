@@ -2,13 +2,13 @@
 Module responsible for running the game.
 """
 import os
-from random import randrange, choice
+from random import choice, randrange
 from time import sleep
 from gog.components.board import Board
 from gog.components.operation import MOVES
-from gog.components.piece import PIECES, Piece, Flag
+from gog.components.piece import Flag, Piece, PIECES
 from gog.config import constants as con
-from gog.config.style import BOLD, BLINK, to_banner, marker_formatting
+from gog.config.style import marker_formatting, to_banner, BLINK, BOLD
 
 
 remaining_pieces: dict[str, int]

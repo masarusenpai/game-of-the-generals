@@ -1,7 +1,7 @@
 """
 Module containing the `Board` class.
 """
-from gog.components.piece import Piece, Flag, challenge_icon
+from gog.components.piece import Flag, Piece, challenge_icon
 from gog.config import constants as con
 
 
