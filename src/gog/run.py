@@ -2,7 +2,7 @@
 Module responsible for running the game.
 """
 import os
-from random import randrange
+from random import randrange, choice
 from time import sleep
 from gog.components.board import Board
 from gog.components.operation import MOVES
@@ -120,11 +120,7 @@ def display_rules() -> None:
         for line in fd.readlines():
             print(line, end="")
 
-    if in_game:
-        input_message = f"\nPress {BOLD('[ENTER]')} to return to game."
-    else:
-        input_message = f"\nPress {BOLD('[ENTER]')} to return to main menu."
-    input(input_message)
+    input(f"\nPress {BOLD('[ENTER]')} to return to main menu.")
 
 
 def display_legend() -> None:
@@ -180,7 +176,7 @@ def print_in_game_commands() -> None:
     print("OTHER SUPPORTED COMMANDS")
     print("=" * con.PRINT_LEN(con.BOARD_WID))
     print("(WHICH <POS>)      View name of piece at <POS>")
-    print("(RULES/R)                           View rules")
+    print("(LEGEND/L)                   View emoji legend")
     print("(FORFEIT)                     Forfeit the game")
     print("(CTRL+C / CTRL+D)                   Force exit\n")
 
@@ -465,8 +461,8 @@ def handle_game() -> None:
         cmd = input(BLINK("> "))
 
         match cmd.lower():
-            case "rules" | "r":
-                display_rules()
+            case "legend" | "l":
+                display_legend()
                 continue
             case "forfeit":
                 if verify_user_action("forfeit"):
@@ -561,20 +557,20 @@ def handle_game() -> None:
         if challenger_pieces:
             # If at least one opponent piece has an adjacent challengeable piece, randomly
             # choose from those pieces to move
-            opp_choice = challenger_pieces[randrange(len(challenger_pieces))]
+            opp_choice = choice(challenger_pieces)
         else:
             # Otherwise, select a piece from a list of moveable, active opponent pieces
             movable_opp_pieces = [
                 opp_p for opp_p in opp_pieces
                 if opp_p.active and not board.is_surrounded(opp_p)
             ]
-            opp_choice = movable_opp_pieces[randrange(len(movable_opp_pieces))]
+            opp_choice = choice(movable_opp_pieces)
 
         opp_x, opp_y = opp_choice.get_pos()
         valid_moves = board.get_valid_moves(opp_choice)
         if "down" in valid_moves:
             valid_moves.append("down")
-        chosen_move = valid_moves[randrange(len(valid_moves))]
+        chosen_move = choice(valid_moves)
 
         set_console(f"{indices_to_coords(opp_x, opp_y)} {chosen_move.upper()}")
         os.system(clear)
