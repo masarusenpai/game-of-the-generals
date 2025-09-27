@@ -157,22 +157,19 @@ class Board:
         adjacent = list(self.__get_adjacent(piece).values())
         return all(adj_piece is not None and adj_piece.opp for adj_piece in adjacent)
 
-    def can_be_challenged(self, piece: Piece) -> bool:
+    def can_be_challenged(self, piece: Piece) -> list[str]:
         """
         Indicates whether a piece can be challenged by an adjacent opposing piece.
         """
-        adjacent = list(self.__get_adjacent(piece).values())
-        return not all(
-            adj_piece is None or adj_piece.opp == piece.opp or adj_piece.rank == con.WALL
-            for adj_piece in adjacent
-        )
+        adjacent = self.__get_adjacent(piece)
+        return [
+            move for move in list(adjacent)
+            if (p_adj := adjacent.get(move)) is not None and not p_adj.opp
+        ]
 
     def get_valid_moves(self, piece: Piece) -> list[str]:
         """
         Returns a list of valid moves `piece` may make.
-
-        May not work as intended, so this must be used in conjunction with the error handling
-        present in `run.py`.
         """
         adjacent = self.__get_adjacent(piece)
         return [

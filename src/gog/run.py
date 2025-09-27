@@ -1,8 +1,9 @@
 """
 Module responsible for running the game.
 """
+from math import ceil
 import os
-from random import choice, randrange
+from random import choice, random, randrange
 from time import sleep
 from gog.components.board import Board
 from gog.components.operation import MOVES
@@ -541,35 +542,50 @@ def handle_game() -> None:
         board_and_console()
         sleep(2)
 
-        if board.clear_path_to_end():
-            flag_x, flag_y = board.get_opp_flag().get_pos()
-            flag_res = MOVES.get("down").generate_move().execute(board, flag_x, flag_y)[1]
-            if handle_turn(flag_res):
-                break
-            continue
-
         challenger_pieces = [
             challenger for challenger in opp_pieces
             if challenger.active and board.can_be_challenged(challenger)
         ]
 
         opp_choice: Piece = None
+        valid_moves: list[str] = []
+        # If at least one opponent piece has an adjacent challengeable piece, randomly
+        # choose from those pieces to move
         if challenger_pieces:
-            # If at least one opponent piece has an adjacent challengeable piece, randomly
-            # choose from those pieces to move
             opp_choice = choice(challenger_pieces)
+            # Append 'challengeable' moves to valid_moves array to make challenge more likely
+            normal_move = ((board.can_be_challenged(opp_choice) * 2)
+                           + board.get_valid_moves(opp_choice))
+
+            if isinstance(opp_choice, Flag):
+                random_bool = random() < 0.8
+                escape_move = [
+                    move for move in board.get_valid_moves(opp_choice)
+                    if move not in board.can_be_challenged(opp_choice)
+                ]
+                valid_moves = escape_move if random_bool and escape_move else normal_move
+            else:
+                valid_moves = normal_move
+        elif board.clear_path_to_end():
+            opp_choice = board.get_opp_flag()
+            valid_moves = ["down"]
+
+        # Otherwise, select a piece from a list of moveable, active opponent pieces
         else:
-            # Otherwise, select a piece from a list of moveable, active opponent pieces
             movable_opp_pieces = [
                 opp_p for opp_p in opp_pieces
                 if opp_p.active and not board.is_surrounded(opp_p)
             ]
+            movable_opp_pieces.sort(key=lambda p: p.get_pos()[1])
+            pieces_in_front = movable_opp_pieces[:ceil(len(movable_opp_pieces) / 3)]
+            movable_opp_pieces += pieces_in_front * 3
             opp_choice = choice(movable_opp_pieces)
 
+            valid_moves = board.get_valid_moves(opp_choice)
+            if "down" in valid_moves:
+                valid_moves += ["down"] * 2
+
         opp_x, opp_y = opp_choice.get_pos()
-        valid_moves = board.get_valid_moves(opp_choice)
-        if "down" in valid_moves:
-            valid_moves.append("down")
         chosen_move = choice(valid_moves)
 
         set_console(f"{indices_to_coords(opp_x, opp_y)} {chosen_move.upper()}")
