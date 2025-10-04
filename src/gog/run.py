@@ -557,6 +557,7 @@ def handle_game() -> None:
             normal_move = ((board.can_be_challenged(opp_choice) * 2)
                            + board.get_valid_moves(opp_choice))
 
+            # If the chosen piece is a flag, escape from any challengeable piece 80% of the time
             if isinstance(opp_choice, Flag):
                 random_bool = random() < 0.8
                 escape_move = [
@@ -566,6 +567,8 @@ def handle_game() -> None:
                 valid_moves = escape_move if random_bool and escape_move else normal_move
             else:
                 valid_moves = normal_move
+
+        # Next, check if there is a clear path from flag to end of board
         elif board.clear_path_to_end():
             opp_choice = board.get_opp_flag()
             valid_moves = ["down"]
@@ -576,11 +579,18 @@ def handle_game() -> None:
                 opp_p for opp_p in opp_pieces
                 if opp_p.active and not board.is_surrounded(opp_p)
             ]
+            # Get first 1/3rd half of frontmost pieces to append to original movable_opp_pieces so
+            # frontmost pieces are more likely chosen
             movable_opp_pieces.sort(key=lambda p: p.get_pos()[1])
-            pieces_in_front = movable_opp_pieces[:ceil(len(movable_opp_pieces) / 3)]
-            movable_opp_pieces += pieces_in_front * 3
+            pieces_in_front = movable_opp_pieces[:ceil(len(movable_opp_pieces) / 5)]
+            # Get first 1/3rd half of pieces w/ highest rank and append to original
+            # movable_opp_pieces so more powerful pieces are more likely chosen
+            pieces_in_front.sort(key=lambda p: p.rank, reverse=True)
+            high_ranked_pieces = pieces_in_front[:ceil(len(pieces_in_front) / 5)]
+            movable_opp_pieces += (pieces_in_front + high_ranked_pieces) * 5
             opp_choice = choice(movable_opp_pieces)
 
+            # Implement biased random selection so piece is more likely to move forward, i.e. 'down'
             valid_moves = board.get_valid_moves(opp_choice)
             if "down" in valid_moves:
                 valid_moves += ["down"] * 2
